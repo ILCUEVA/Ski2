@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% set active_page = 'inicio' %}
+{% block title %}Inicio · Balancea{% endblock %}
+{% block page_heading %}Inicio{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <p class="bc-auth-eyebrow mb-1">Tu resumen financiero</p>
+      <h2 class="fw-bold mb-1">Hola, {{ empresa.nombre }}</h2>
+      <p class="text-muted-soft mb-0">Todo lo que necesitas para dar claridad a tus resultados.</p>
+    </div>
+    <span class="bc-badge-soft"><i class="bi bi-calendar3 me-1"></i>Año {{ empresa.anio_vigente }}</span>
+  </div>
+
+  <div class="bc-banner p-4 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div>
+      <p class="bc-auth-eyebrow mb-1">De los datos a las decisiones</p>
+      <h4 class="fw-bold mb-1">Tus balances son el punto de partida.</h4>
+      <p class="text-muted-soft mb-0">Carga tu archivo, revisa la clasificación y prepara tu informe bajo NIIF 18.</p>
+    </div>
+    <a href="{{ url_for('subir_balance') }}" class="btn btn-bc-primary d-flex align-items-center gap-2">
+      <i class="bi bi-cloud-upload"></i> Subir Información Contable
+    </a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="bc-card p-3 h-100">
+        <div class="bc-metric-icon mb-3"><i class="bi bi-bar-chart-line"></i></div>
+        <div class="h4 fw-bold mb-0">$96,0 M</div>
+        <div class="text-muted-soft small">Resultado operativo</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="bc-card p-3 h-100">
+        <div class="bc-metric-icon mb-3"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="h4 fw-bold mb-0">$104,0 M</div>
+        <div class="text-muted-soft small">Antes de financiación e impuestos</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="bc-card p-3 h-100">
+        <div class="bc-metric-icon mb-3"><i class="bi bi-calendar2-check"></i></div>
+        <div class="h4 fw-bold mb-0">$60,2 M</div>
+        <div class="text-muted-soft small">Resultado del periodo</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-7">
+      <div class="bc-card p-3 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0">Tus balances recientes</h6>
+          <a href="{{ url_for('mis_documentos') }}" class="small text-decoration-none">Ver todos</a>
+        </div>
+        <table class="table bc-table align-middle mb-0">
+          <thead>
+            <tr><th>Archivo</th><th>Periodo</th><th>Estado</th><th>Progreso</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for b in balances %}
+            {% set p = progresos[b.id] %}
+            {% if p.paso == 1 %}
+              {% set ruta_paso = url_for('subir_balance') %}
+            {% elif p.paso == 2 %}
+              {% set ruta_paso = url_for('clasificacion') %}
+            {% else %}
+              {% set ruta_paso = url_for('estado_resultados') %}
+            {% endif %}
+            <tr>
+              <td><i class="bi bi-file-earmark-spreadsheet me-2 text-muted-soft"></i>{{ b.archivo_nombre }}</td>
+              <td>{{ b.periodo }}</td>
+              <td>
+                {% if p.completo %}
+                  <span class="bc-badge-success">Completado</span>
+                {% else %}
+                  <span class="bc-badge-soft">Borrador</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ ruta_paso }}" class="d-block text-decoration-none" aria-label="Continuar con {{ p.etiqueta }}">
+                {% if p.completo %}
+                  <span class="bc-badge-success"><i class="bi bi-check2 me-1"></i>Completado</span>
+                {% else %}
+                  <span class="{{ 'bc-badge-warning' if p.por_vencer else 'bc-badge-soft' }} d-block mb-1">{{ p.etiqueta }}</span>
+                  <span class="small {{ 'text-danger fw-semibold' if p.por_vencer else 'text-muted-soft' }}">
+                    <i class="bi bi-hourglass-split me-1"></i>
+                    {% if p.minutos_restantes > 0 %}Se borra en {{ p.minutos_restantes }} min si no terminas{% else %}Por borrarse{% endif %}
+                  </span>
+                {% endif %}
+                </a>
+              </td>
+              <td class="text-end"><a href="{{ ruta_paso }}" aria-label="Continuar con {{ p.etiqueta }}"><i class="bi bi-arrow-right"></i></a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-muted-soft">Aún no has cargado balances.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="bc-card p-3 h-100">
+        <h6 class="fw-bold mb-3">Créditos de informes</h6>
+          {% if resumen_pack %}
+          <p class="fw-semibold mb-2"><i class="bi bi-box-seam text-muted-soft me-1"></i>Pack {{ resumen_pack.nombre }}</p>
+          <p class="text-muted-soft small mb-0">{{ resumen_pack.incluidos }} incluidos · {{ resumen_pack.usados }} usado{{ 's' if resumen_pack.usados != 1 else '' }} · {{ resumen_pack.restantes }} restante{{ 's' if resumen_pack.restantes != 1 else '' }}</p>
+          {% else %}
+          <p class="text-muted-soft small mb-3">No tienes un pack de informes comprado.</p>
+          <a href="{{ url_for('packs') }}" class="btn btn-bc-primary btn-sm"><i class="bi bi-box-seam me-1"></i>Comprar pack</a>
+          {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="bc-card p-3 d-flex align-items-start gap-3">
+    <i class="bi bi-info-circle text-muted-soft fs-5"></i>
+    <div>
+      <div class="fw-semibold">Antes de empezar: confirma tu marco contable</div>
+      <div class="text-muted-soft small">NIIF 18 reemplaza a la NIC 1; no sustituye la NIIF para PYMES. Valida la aplicabilidad con tu contador.</div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% set active_page = 'configuracion' %}
+{% block title %}Configuración · Balancea{% endblock %}
+{% block page_heading %}Configuración{% endblock %}
+
+{% block content %}
+  <h3 class="fw-bold mb-1">Configuración</h3>
+  <p class="text-muted-soft mb-4">Datos generales de tu empresa.</p>
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="bc-card p-3">
+        <h6 class="fw-bold mb-3">Datos de la empresa</h6>
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label small">Nombre</label>
+            <input type="text" class="form-control" name="nombre" value="{{ empresa.nombre }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small">Rubro</label>
+            <div class="row row-cols-2 row-cols-md-3 g-2">
+              {% for rubro in rubros %}
+                <div class="col">
+                  <div class="form-check border rounded-3 px-3 py-2 h-100 d-flex align-items-center">
+                    <input class="form-check-input me-2" type="radio" name="rubro" id="rubro-cfg-{{ loop.index }}" value="{{ rubro }}" required {{ 'checked' if rubro == empresa.rubro else '' }}>
+                    <label class="form-check-label small d-flex align-items-center gap-2" for="rubro-cfg-{{ loop.index }}">
+                      <i class="bi {{ rubros_iconos.get(rubro, 'bi-briefcase') }} text-muted-soft"></i> {{ rubro }}
+                    </label>
+                  </div>
+                </div>
+              {% endfor %}
+              <div class="col">
+                <div class="form-check border rounded-3 px-3 py-2 h-100 d-flex align-items-center">
+                  <input class="form-check-input me-2" type="radio" name="rubro" id="rubro-cfg-otro" value="Otro" required {{ 'checked' if empresa.rubro not in rubros else '' }}>
+                  <label class="form-check-label small d-flex align-items-center gap-2" for="rubro-cfg-otro">
+                    <i class="bi bi-three-dots text-muted-soft"></i> Otro
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="mt-2" id="rubro-cfg-otro-campo" {{ 'hidden' if empresa.rubro in rubros else '' }}>
+              <label class="form-label small" for="rubro_cfg_otro">Especifica el rubro</label>
+              <input class="form-control" type="text" id="rubro_cfg_otro" name="rubro_otro" maxlength="50" value="{{ empresa.rubro if empresa.rubro not in rubros else '' }}" placeholder="Ej. Agricultura" {{ 'disabled' if empresa.rubro in rubros else 'required' }}>
+            </div>
+          </div>
+          <div class="mb-3" style="max-width: 280px;">
+            <label class="form-label small">Moneda</label>
+            <select class="form-select" name="moneda">
+              {% for moneda in monedas %}
+              <option value="{{ moneda.codigo }}" {{ 'selected' if moneda.codigo == empresa.moneda else '' }}>
+                {{ moneda.codigo }} – {{ moneda.nombre }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-bc-primary">Guardar cambios</button>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    (() => {
+      const campo = document.getElementById('rubro-cfg-otro-campo');
+      const texto = document.getElementById('rubro_cfg_otro');
+      const actualizarCampo = () => {
+        const mostrar = document.querySelector('input[name="rubro"]:checked')?.value === 'Otro';
+        campo.hidden = !mostrar;
+        texto.disabled = !mostrar;
+        texto.required = mostrar;
+        if (!mostrar) texto.value = '';
+      };
+      document.querySelectorAll('input[name="rubro"]').forEach(opcion => opcion.addEventListener('change', actualizarCampo));
+      actualizarCampo();
+    })();
+  </script>
+{% endblock %}

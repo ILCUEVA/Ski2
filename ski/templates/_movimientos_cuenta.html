@@ -1,0 +1,37 @@
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h6 class="fw-bold mb-0">{{ cuenta.nombre }}</h6>
+    <span class="text-muted-soft small">Código {{ cuenta.codigo }} · Categoría {{ cuenta.categoria_niif }}</span>
+  </div>
+  <span class="fw-semibold">{{ '(' + (cuenta.importe|abs|monto) + ')' if cuenta.importe < 0 else cuenta.importe|monto }}</span>
+</div>
+
+{% if movimientos %}
+<div class="table-responsive" style="max-height: 360px; overflow-y:auto;">
+  <table class="table table-sm bc-table align-middle mb-0">
+    <thead>
+      <tr>
+        <th>Fecha</th><th>N° trans.</th><th>Detalle</th>
+        <th class="text-end">Debe</th><th class="text-end">Haber</th>
+        <th class="text-end">Saldo deudor</th><th class="text-end">Saldo acreedor</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in movimientos %}
+      <tr>
+        <td>{{ m.fecha.strftime('%d-%m-%Y') if m.fecha else '—' }}</td>
+        <td>{{ m.num_transaccion or '—' }}</td>
+        <td>{{ m.detalle or '—' }}</td>
+        <td class="text-end">{{ m.debe|monto if m.debe else '—' }}</td>
+        <td class="text-end">{{ m.haber|monto if m.haber else '—' }}</td>
+        <td class="text-end">{{ m.saldo_deudor|monto if m.saldo_deudor else '—' }}</td>
+        <td class="text-end">{{ m.saldo_acreedor|monto if m.saldo_acreedor else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="text-muted-soft small mt-2 mb-0">{{ movimientos|length }} movimiento{{ 's' if movimientos|length != 1 else '' }} registrados en el libro mayor.</p>
+{% else %}
+<p class="text-muted-soft mb-0">No se encontraron movimientos de libro mayor para esta cuenta.</p>
+{% endif %}

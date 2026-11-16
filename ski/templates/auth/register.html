@@ -1,0 +1,98 @@
+{% extends "auth/auth_base.html" %}
+
+{% block title %}Crear cuenta · Balancea{% endblock %}
+{% block aside_title %}Un nuevo capítulo para tu empresa.{% endblock %}
+{% block aside_subtitle %}Dale a tu pyme un espacio para organizar, clasificar y presentar sus resultados.{% endblock %}
+
+{% block content %}
+  <p class="bc-auth-eyebrow mb-1">Empecemos</p>
+  <h2 class="fw-bold mb-1">Crea tu cuenta</h2>
+  <p class="text-muted-soft mb-4">Tu empresa, lista para dar el siguiente paso.</p>
+
+  <form method="post" novalidate>
+    <div class="mb-3">
+      <label class="form-label" for="nombre_empresa">Nombre de tu empresa</label>
+      <div class="input-group">
+        <span class="input-group-text bg-white"><i class="bi bi-building"></i></span>
+        <input type="text" class="form-control" id="nombre_empresa" name="nombre_empresa" placeholder="Ej. Comercial Andina S.A.S." required>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Rubro de la empresa</label>
+      <p class="text-muted-soft small mb-2">Rubros habituales para pymes no financieras.</p>
+      <div class="row row-cols-2 g-2">
+        {% for rubro in rubros %}
+          <div class="col">
+            <div class="form-check border rounded-3 px-3 py-2 h-100 d-flex align-items-center">
+              <input class="form-check-input me-2" type="radio" name="rubro" id="rubro{{ loop.index }}" value="{{ rubro }}" required {% if rubro == 'Comercial' %}checked{% endif %}>
+              <label class="form-check-label small d-flex align-items-center gap-2" for="rubro{{ loop.index }}">
+                <i class="bi {{ rubros_iconos.get(rubro, 'bi-briefcase') }} text-muted-soft"></i> {{ rubro }}
+              </label>
+            </div>
+          </div>
+        {% endfor %}
+        <div class="col">
+          <div class="form-check border rounded-3 px-3 py-2 h-100 d-flex align-items-center">
+            <input class="form-check-input me-2" type="radio" name="rubro" id="rubro-otro" value="Otro" required>
+            <label class="form-check-label small d-flex align-items-center gap-2" for="rubro-otro">
+              <i class="bi bi-three-dots text-muted-soft"></i> Otro
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="mt-2" id="rubro-otro-campo" hidden>
+        <label class="form-label small" for="rubro_otro">Especifica el rubro</label>
+        <input class="form-control" type="text" id="rubro_otro" name="rubro_otro" maxlength="50" placeholder="Ej. Agricultura" disabled>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" for="correo">Correo electrónico</label>
+      <div class="input-group">
+        <span class="input-group-text bg-white"><i class="bi bi-envelope"></i></span>
+        <input type="email" class="form-control" id="correo" name="correo" placeholder="tu@empresa.com" required>
+      </div>
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label" for="password">Contraseña</label>
+      <div class="input-group">
+        <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
+        <input type="password" class="form-control" id="password" name="password" placeholder="Crea una contraseña segura" minlength="8" required>
+        <span class="input-group-text bg-white"><i class="bi bi-eye"></i></span>
+      </div>
+      <div class="form-text">Mínimo 8 caracteres, una letra y un número.</div>
+    </div>
+
+    <div class="form-check mb-4">
+      <input class="form-check-input" type="checkbox" id="acepto" name="acepto" required>
+      <label class="form-check-label small" for="acepto">Acepto los Términos de uso y la Política de privacidad.</label>
+    </div>
+
+    <button type="submit" class="btn btn-bc-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2">
+      Crear mi cuenta <i class="bi bi-arrow-right"></i>
+    </button>
+
+    <p class="text-center mt-3 mb-0 small">
+      ¿Ya tienes una cuenta? <a href="{{ url_for('login') }}" class="fw-semibold text-decoration-none">Inicia sesión</a>
+    </p>
+  </form>
+
+  <p class="text-center text-muted-soft small mt-4"><i class="bi bi-shield-lock me-1"></i>Tú mantienes el control de tus datos.</p>
+  <script>
+    (() => {
+      const campo = document.getElementById('rubro-otro-campo');
+      const texto = document.getElementById('rubro_otro');
+      const actualizarCampo = () => {
+        const mostrar = document.querySelector('input[name="rubro"]:checked')?.value === 'Otro';
+        campo.hidden = !mostrar;
+        texto.disabled = !mostrar;
+        texto.required = mostrar;
+        if (!mostrar) texto.value = '';
+      };
+      document.querySelectorAll('input[name="rubro"]').forEach(opcion => opcion.addEventListener('change', actualizarCampo));
+      actualizarCampo();
+    })();
+  </script>
+{% endblock %}

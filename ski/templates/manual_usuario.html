@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+{% set active_page = 'manual_usuario' %}
+{% block title %}Manual de usuario · Balancea{% endblock %}
+{% block page_heading %}Manual de usuario{% endblock %}
+
+{% block content %}
+  <div class="bc-manual-hero mb-4">
+    <span class="bc-badge-soft" style="background: rgba(255,255,255,0.18); color:#fff;">
+      <i class="bi bi-life-preserver me-1"></i>Guía paso a paso
+    </span>
+    <h3 class="fw-bold mt-3 mb-2">Todo lo que necesitas para usar Balancea</h3>
+    <p class="mb-0" style="max-width:640px;">
+      Aprende a subir tu balance, clasificarlo según NIIF 18, generar tu Estado de Rendimiento
+      Financiero y aprovechar las herramientas de gestión de Balancea, en un solo lugar.
+    </p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-3">
+      <nav class="bc-manual-nav bc-card p-2" id="manual-nav">
+        <a class="nav-link" href="#inicio"><i class="bi bi-house-door"></i> Inicio</a>
+        <a class="nav-link" href="#subir-balance"><i class="bi bi-cloud-upload"></i> Subir balance</a>
+        <a class="nav-link" href="#clasificacion"><i class="bi bi-ui-checks"></i> Clasificación</a>
+        <a class="nav-link" href="#estado-resultados"><i class="bi bi-file-earmark-bar-graph"></i> Estado de Rendimiento</a>
+        <a class="nav-link" href="#mpm"><i class="bi bi-clipboard-data"></i> MPM</a>
+        <a class="nav-link" href="#toma-decisiones"><i class="bi bi-lightbulb"></i> Toma de Decisiones</a>
+        <a class="nav-link" href="#packs"><i class="bi bi-box-seam"></i> Packs</a>
+        <a class="nav-link" href="#mis-documentos"><i class="bi bi-folder2-open"></i> Mis documentos</a>
+        <a class="nav-link" href="#configuracion"><i class="bi bi-gear"></i> Configuración</a>
+        <a class="nav-link" href="#preguntas-frecuentes"><i class="bi bi-question-circle"></i> Preguntas frecuentes</a>
+      </nav>
+    </div>
+
+    <div class="col-lg-9">
+      <div class="bc-manual-content" style="position:relative;">
+
+        <!-- Inicio -->
+        <section id="inicio" class="bc-manual-section bc-card p-4 mb-4">
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <span class="bc-manual-icon"><i class="bi bi-house-door"></i></span>
+            <div>
+              <h4 class="fw-bold mb-1">Inicio</h4>
+              <p class="text-muted-soft mb-0">Tu punto de partida: el estado de tus balances y el avance de cada tarea.</p>
+            </div>
+          </div>
+          <p class="mb-2">En el <strong>Inicio</strong> encuentras:</p>
+          <ul class="mb-3">
+            <li>El listado de balances cargados, con su periodo y estado (Borrador, En clasificación, Completo).</li>
+            <li>Una barra de progreso que indica cuánto te falta para terminar la clasificación NIIF 18 de cada balance.</li>
+            <li>Accesos directos para continuar donde quedaste (clasificar cuentas o revisar tu Estado de Rendimiento Financiero).</li>
+          </ul>
+          <div class="bc-manual-tip">
+            <i class="bi bi-lightbulb me-1"></i>
+            Si llevas más de 30 minutos sin terminar una carga, Balancea la descarta automáticamente para mantener
+            tu panel limpio. Puedes volver a subir el archivo cuando quieras.
+          </div>
+        </section>
+
+        <!-- Subir balance -->
+        <section id="subir-balance" class="bc-manual-section bc-card p-4 mb-4">
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <span class="bc-manual-icon"><i class="bi bi-cloud-upload"></i></span>
+            <div>
+              <h4 class="fw-bold mb-1">Subir balance</h4>
+              <p class="text-muted-soft mb-0">El primer paso del flujo: carga tu balance (y opcionalmente tu libro mayor).</p>
+            </div>
+          </div>
+          <ol class="bc-manual-steps">
+            <li>
+              <strong>Descarga la plantilla.</strong> Usa los botones de plantilla de Balance y de Libro Mayor
+              para asegurarte de que las columnas coincidan con lo que Balancea espera leer.
+            </li>
+            <li>
+              <strong>Selecciona el periodo y la moneda.</strong> Elige el año del balance (2024 a 2026) y la
+              moneda en la que está expresado (CLP por defecto).
+            </li>
+            <li>
+              <strong>Adjunta el archivo de Balance.</strong> Es obligatorio: contiene las cuentas de resultado
+              (ingresos, costos, gastos) que se clasificarán automáticamente.
+            </li>
+            <li>
+              <strong>Adjunta el Libro Mayor (opcional).</strong> Si lo subes, Balancea cruza los movimientos
+              contables con cada cuenta para que puedas revisar el detalle de cada una más adelante.
+            </li>
+            <li>
+              <strong>Sube el archivo.</strong> Balancea clasifica automáticamente cada cuenta según NIIF 18 y
+              te lleva directo a la pantalla de <a href="#clasificacion">Clasificación</a>.
+            </li>
+          </ol>
+          <div class="bc-manual-tip mt-2">
+            <i class="bi bi-info-circle me-1"></i>
+            Si tu archivo tiene filas de texto o encabezados sueltos en columnas numéricas, Balancea las ignora
+            automáticamente en vez de fallar, así que no necesitas "limpiar" el Excel antes de subirlo.
+          </div>
+        </section>
+
+        <!-- Clasificación -->
+        <section id="clasificacion" class="bc-manual-section bc-card p-4 mb-4">
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <span class="bc-manual-icon"><i class="bi bi-ui-checks"></i></span>
+            <div>
+              <h4 class="fw-bold mb-1">Clasificación</h4>
+              <p class="text-muted-soft mb-0">Revisa y confirma la categoría NIIF 18 que Balancea sugirió para cada cuenta.</p>
+            </div>
+          </div>
+          <ul class="mb-3">
+            <li>Cada cuenta llega con una <strong>categoría sugerida</strong> (por ejemplo, Operación, Financiamiento, Impuestos) y el motivo de esa clasificación.</li>
+            <li>Haz clic en <span class="bc-icon-btn bc-icon-btn-si d-inline-flex" style="width:24px;height:24px;"><i class="bi bi-check-lg" style="font-size:0.7rem;"></i></span> para confirmar la sugerencia, o cambia la categoría manualmente si no corresponde.</li>
+            <li>Haz clic en el nombre de una cuenta para ver sus <strong>movimientos del libro mayor</strong> (si lo subiste), útil para verificar el origen del monto.</li>
+            <li>La barra superior muestra cuántas cuentas ya revisaste del total.</li>
+          </ul>
+          <div class="bc-manual-tip">
+            <i class="bi bi-shield-check me-1"></i>
+            Debes confirmar todas las cuentas antes de poder generar el Estado de Rendimiento Financiero.
+          </div>
+        </section>
+
+        <!-- Estado de Rendimiento Financiero -->
+        <section id="estado-resultados" class="bc-manual-section bc-card p-4 mb-4">
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <span class="bc-manual-icon"><i class="bi bi-file-earmark-bar-graph"></i></span>
+            <div>
+              <h4 class="fw-bold mb-1">Estado de Rendimiento Financiero</h4>
+              <p class="text-muted-soft mb-0">El resultado final: tu estado financiero armado según NIIF 18, listo para exportar.</p>
+            </div>
+          </div>
+          <ul class="mb-3">
+            <li>Visualiza los subtotales por categoría (Operación, Financiamiento, Impuestos) y el <strong>Resultado final del periodo</strong>.</li>
+            <li>Si ya tienes un balance de un periodo anterior, el informe se muestra en formato <strong>comparativo</strong> (dos columnas).</li>
+            <li>Para exportar a PDF, se te pedirá elegir un <strong>medio de pago</strong> (simulado, sin cobro real en este ambiente local) por un valor de referencia de $12.990.</li>
+            <li>El PDF generado queda guardado automáticamente y disponible en <a href="#mis-documentos">Mis documentos</a>.</li>
+          </ul>
+          <div class="bc-manual-tip">
+            <i class="bi bi-lightbulb me-1"></i>
+            Dependiendo de tu <a href="#packs">Pack</a>, puedes tener informes incluidos sin costo adicional por carga.
+          </div>
+        </section>
+
+        <!-- MPM -->
+        <section id="mpm" class="bc-manual-section bc-card p-4 mb-4">
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <span class="bc-manual-icon"><i class="bi bi-clipboard-data"></i></span>
+            <div>
+              <h4 class="fw-bold mb-1">MPM (Medidas de Rendimiento Definidas por la Gerencia)</h4>
+              <p class="text-muted-soft mb-0">Indicadores sugeridos automáticamente según el rubro de tu empresa.</p>
+            </div>
+          </div>
+          <ul class="mb-3">
+            <li>Balancea calcula indicadores como <strong>EBITDA</strong>, <strong>EBIT</strong> y otras métricas relevantes para tu industria, a partir de tu Estado de Rendimiento Financiero ya generado.</li>
+            <li>Las métricas sugeridas cambian según el <strong>rubro</strong> configurado para tu empresa (por ejemplo, Farmacia, Construcción, Comercio).</li>
+            <li>Esta sección requiere un Pack que incluya MPM (ver <a href="#packs">Packs</a>); si no tienes acceso, verás una vista previa con el detalle de qué incluye.</li>
+          </ul>
+        </section>
+
+        <!-- Toma de decisiones -->
+        <section id="toma-decisiones" class="bc-manual-section bc-card p-4 mb-4">
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <span class="bc-manual-icon"><i class="bi bi-lightbulb"></i></span>
+            <div>
+              <h4 class="fw-bold mb-1">Toma de Decisiones</h4>
+              <p class="text-muted-soft mb-0">Tendencias, comparativos y alertas automáticas entre periodos.</p>
+            </div>
+          </div>
+          <ul class="mb-3">
+            <li><strong>Tendencias:</strong> cómo evolucionan tus principales cuentas periodo a periodo.</li>
+            <li><strong>Comparativos:</strong> variación porcentual entre el periodo actual y el anterior.</li>
+            <li><strong>Alertas:</strong> avisos automáticos cuando una cuenta o resultado cambia de forma significativa (por ejemplo, una caída fuerte en ingresos).</li>
+            <li>Necesitas al menos dos balances generados (de periodos distintos) para ver comparativos y tendencias, y un Pack que incluya esta sección.</li>
+          </ul>
+        </section>
+
+        <!-- Packs -->
+        <section id="packs" class="bc-manual-section bc-card p-4 mb-4">
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <span class="bc-manual-icon"><i class="bi bi-box-seam"></i></span>
+            <div>
+              <h4 class="fw-bold mb-1">Packs</h4>
+              <p class="text-muted-soft mb-0">Elige cómo pagar tus informes y qué funciones desbloqueas.</p>
+            </div>
+          </div>
+          <ul class="mb-3">
+            <li><strong>Individual:</strong> pagas solo cuando generas un informe, sin acceso a MPM ni Toma de Decisiones.</li>
+            <li><strong>Pack Pyme:</strong> informes mensuales incluidos y acceso a Toma de Decisiones.</li>
+            <li><strong>Pack Anual:</strong> informes ilimitados durante 12 meses y acceso completo a MPM y Toma de Decisiones.</li>
+            <li>Puedes cambiar de Pack en cualquier momento desde esta sección; el cambio es inmediato.</li>
+          </ul>
+          <div class="bc-manual-tip">
+            <i class="bi bi-info-circle me-1"></i>
+            En este ambiente local, la activación de Packs es simulada: no se realiza ningún cobro real.
+          </div>
+        </section>
+
+        <!-- Mis documentos -->
+        <section id="mis-documentos" class="bc-manual-section bc-card p-4 mb-4">
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <span class="bc-manual-icon"><i class="bi bi-folder2-open"></i></span>
+            <div>
+              <h4 class="fw-bold mb-1">Mis documentos</h4>
+              <p class="text-muted-soft mb-0">Historial de todo lo que has subido y generado en Balancea.</p>
+            </div>
+          </div>
+          <ul class="mb-3">
+            <li>Revisa y descarga los <strong>informes PDF</strong> de Estado de Rendimiento Financiero ya generados.</li>
+            <li>Consulta los <strong>balances</strong> y libros mayores que has subido, por periodo.</li>
+            <li>Elimina un documento puntual, o usa <strong>"Eliminar todo"</strong> para limpiar todo tu historial.</li>
+          </ul>
+          <div class="bc-manual-tip">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Eliminar un documento es una acción permanente: no queda una copia de respaldo dentro de la aplicación.
+          </div>
+        </section>
+
+        <!-- Configuración -->
+        <section id="configuracion" class="bc-manual-section bc-card p-4 mb-4">
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <span class="bc-manual-icon"><i class="bi bi-gear"></i></span>
+            <div>
+              <h4 class="fw-bold mb-1">Configuración</h4>
+              <p class="text-muted-soft mb-0">Datos generales de tu empresa.</p>
+            </div>
+          </div>
+          <ul class="mb-3">
+            <li>Edita el <strong>nombre</strong>, <strong>rubro</strong> y <strong>país</strong> de tu empresa.</li>
+            <li>El rubro influye directamente en las métricas sugeridas de <a href="#mpm">MPM</a>.</li>
+            <li>Cambia la moneda con la que se muestran y exportan tus informes.</li>
+          </ul>
+        </section>
+
+        <!-- FAQ -->
+        <section id="preguntas-frecuentes" class="bc-manual-section bc-card p-4 mb-4">
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <span class="bc-manual-icon"><i class="bi bi-question-circle"></i></span>
+            <div>
+              <h4 class="fw-bold mb-1">Preguntas frecuentes</h4>
+              <p class="text-muted-soft mb-0">Dudas comunes sobre el uso de Balancea.</p>
+            </div>
+          </div>
+          <div class="accordion bc-manual-faq" id="manualFaq">
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                  ¿Qué pasa si mi archivo de Excel tiene errores de formato?
+                </button>
+              </h2>
+              <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#manualFaq">
+                <div class="accordion-body">
+                  Balancea ignora filas no numéricas o mal formateadas en las columnas de montos, en vez de
+                  interrumpir la carga. Aun así, te recomendamos usar las plantillas descargables para evitar
+                  diferencias en el orden de las columnas.
+                </div>
+              </div>
+            </div>
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                  ¿Es obligatorio subir el Libro Mayor?
+                </button>
+              </h2>
+              <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#manualFaq">
+                <div class="accordion-body">
+                  No. El Libro Mayor es opcional. Si lo subes, podrás ver el detalle de movimientos de cada
+                  cuenta en la pantalla de Clasificación, pero el Estado de Rendimiento Financiero se puede
+                  generar solo con el archivo de Balance.
+                </div>
+              </div>
+            </div>
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                  ¿Por qué no veo la sección de MPM o Toma de Decisiones?
+                </button>
+              </h2>
+              <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#manualFaq">
+                <div class="accordion-body">
+                  Esas secciones están disponibles según tu Pack activo. Revisa la sección
+                  <a href="#packs">Packs</a> para ver qué incluye cada plan y cambiar de plan si lo necesitas.
+                </div>
+              </div>
+            </div>
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                  ¿Puedo corregir la categoría NIIF 18 de una cuenta?
+                </button>
+              </h2>
+              <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#manualFaq">
+                <div class="accordion-body">
+                  Sí. En la pantalla de Clasificación puedes cambiar manualmente la categoría sugerida para
+                  cualquier cuenta antes de confirmarla.
+                </div>
+              </div>
+            </div>
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                  ¿Se realiza algún cobro real al generar un informe o cambiar de Pack?
+                </button>
+              </h2>
+              <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#manualFaq">
+                <div class="accordion-body">
+                  No. Este es un ambiente local de demostración: tanto el pago por informe como la activación
+                  de Packs son simulados, sin ningún cobro real.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.bc-manual-nav a[href^="#"], .bc-manual-content a[href^="#"]').forEach(function (enlace) {
+    enlace.addEventListener('click', function (evento) {
+      var destino = document.getElementById(enlace.hash.slice(1));
+      if (!destino) return;
+
+      evento.preventDefault();
+      destino.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start'
+      });
+      history.replaceState(null, '', enlace.hash);
+
+      if (enlace.closest('.bc-manual-nav')) {
+        document.querySelectorAll('.bc-manual-nav .nav-link').forEach(function (item) {
+          item.classList.toggle('active', item === enlace);
+        });
+      }
+    });
+  });
+</script>
+{% endblock %}

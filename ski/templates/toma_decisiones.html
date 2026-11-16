@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% set active_page = 'toma_decisiones' %}
+{% block title %}Tendencias · Balancea{% endblock %}
+{% block page_heading %}Tendencias{% endblock %}
+
+{% block content %}
+  <h3 class="fw-bold mb-1">Tendencias</h3>
+  <p class="text-muted-soft mb-4">Convierte tus Estados de Rendimiento Financiero en señales claras para decidir.</p>
+
+  {% if not acceso_habilitado %}
+  <div class="bc-card p-4 text-center">
+    <i class="bi bi-lock fs-1 text-muted-soft"></i>
+    <h5 class="fw-bold mt-3">Comparativos y Alertas son funciones de pago</h5>
+    <p class="text-muted-soft mb-3">Disponible desde el Pack Pyme: actualiza tu pack para ver comparativos y alertas.</p>
+    <a href="{{ url_for('packs') }}" class="btn btn-bc-primary">Ver Packs</a>
+  </div>
+  {% elif not tiene_datos %}
+  <div class="bc-card p-4 text-center">
+    <i class="bi bi-lightbulb fs-1 text-muted-soft"></i>
+    <h5 class="fw-bold mt-3">Aún no hay Estados de Rendimiento Financiero generados</h5>
+    <p class="text-muted-soft mb-3">Genera y guarda un informe en Mis documentos para incluir ese periodo en Tendencias.</p>
+    <a href="{{ url_for('estado_resultados') }}" class="btn btn-bc-primary">Ir al Estado de Rendimiento Financiero</a>
+  </div>
+  {% else %}
+  <ul class="nav nav-pills nav-fill gap-2 mb-3 bc-feature-tabs" id="tendencias-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active d-flex align-items-center justify-content-center gap-2" id="comparativos-tab" data-bs-toggle="tab" data-bs-target="#comparativos-panel" type="button" role="tab" aria-controls="comparativos-panel" aria-selected="true">
+        <i class="bi bi-bar-chart-steps"></i><span>Comparativos</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link d-flex align-items-center justify-content-center gap-2" id="alertas-tab" data-bs-toggle="tab" data-bs-target="#alertas-panel" type="button" role="tab" aria-controls="alertas-panel" aria-selected="false">
+        <i class="bi bi-bell"></i><span>Alertas</span>
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="tendencias-tab-content">
+    <section class="tab-pane fade show active" id="comparativos-panel" role="tabpanel" aria-labelledby="comparativos-tab" tabindex="0">
+      <div class="bc-card p-3">
+        <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-steps me-1 text-muted-soft"></i>Variaciones</h6>
+        {% if comparativos %}
+        {% macro evaluar_variacion(valor, costo=false) %}
+          {% if valor is none %}—
+          {% elif valor == 0 %}<span class="text-muted-soft">Sin variación</span>
+          {% elif (valor < 0 and costo) or (valor > 0 and not costo) %}<span class="text-success fw-semibold">Favorable</span>
+          {% else %}<span class="text-danger fw-semibold">Desfavorable</span>
+          {% endif %}
+        {% endmacro %}
+        {% if grafico_margenes %}
+        <h6 class="fw-bold mb-2">Evolución anual de márgenes</h6>
+        <div class="table-responsive mb-3">
+          <svg viewBox="0 0 {{ grafico_margenes.ancho }} {{ grafico_margenes.alto }}" role="img" aria-label="Evolución anual de márgenes bruto y operativo" style="display:block;width:100%;min-width:{{ grafico_margenes.ancho }}px;height:auto;">
+            {% for tick in grafico_margenes.ticks %}
+            <line x1="{{ grafico_margenes.izquierda }}" y1="{{ tick.y }}" x2="{{ grafico_margenes.ancho - grafico_margenes.derecha }}" y2="{{ tick.y }}" stroke="#e7e5f0" stroke-width="1" />
+            <text x="{{ grafico_margenes.izquierda - 10 }}" y="{{ tick.y + 4 }}" text-anchor="end" font-size="12" fill="#6b7280">{{ '%.1f'|format(tick.valor) }}%</text>
+            {% endfor %}
+            <line x1="{{ grafico_margenes.izquierda }}" y1="{{ grafico_margenes.cero_y }}" x2="{{ grafico_margenes.ancho - grafico_margenes.derecha }}" y2="{{ grafico_margenes.cero_y }}" stroke="#9ca3af" stroke-width="1.5" />
+            {% for periodo in grafico_margenes.periodos %}
+            <text x="{{ periodo.x }}" y="{{ grafico_margenes.abajo + 24 }}" text-anchor="middle" font-size="12" fill="#6b7280">{{ periodo.etiqueta }}</text>
+            {% endfor %}
+            {% for serie in grafico_margenes.series %}
+              {% for segmento in serie.segmentos %}
+              <polyline points="{{ segmento }}" fill="none" stroke="{{ serie.color }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+              {% endfor %}
+              {% for punto in serie.puntos %}
+              <circle cx="{{ punto.x }}" cy="{{ punto.y }}" r="4" fill="{{ serie.color }}" stroke="#fff" stroke-width="2">
+                <title>{{ serie.etiqueta }} · {{ punto.periodo }}: {{ '%.1f'|format(punto.valor) }}%</title>
+              </circle>
+              {% endfor %}
+            {% endfor %}
+          </svg>
+        </div>
+        <div class="d-flex flex-wrap gap-3 small text-muted-soft mb-3">
+          {% for serie in grafico_margenes.series %}
+          <span class="d-inline-flex align-items-center gap-2"><span style="width:10px;height:10px;border-radius:50%;background:{{ serie.color }};"></span>{{ serie.etiqueta }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <div class="table-responsive">
+          <table class="table bc-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Indicador</th>
+                <th class="text-end">{{ comparativos.periodo_actual }}</th>
+                <th class="text-end">{{ comparativos.periodo_anterior or 'Año anterior' }}</th>
+                <th class="text-end">Variación</th>
+                <th>Evaluación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Margen operativo</td>
+                <td class="text-end">{{ '%.1f'|format(comparativos.margen_operativo_actual) ~ '%' if comparativos.margen_operativo_actual is not none else '—' }}</td>
+                <td class="text-end">{{ '%.1f'|format(comparativos.margen_operativo_anterior) ~ '%' if comparativos.margen_operativo_anterior is not none else '—' }}</td>
+                <td class="text-end">{{ '%.1f'|format(comparativos.variacion_margen_operativo_pp) ~ ' pp' if comparativos.variacion_margen_operativo_pp is not none else '—' }}</td>
+                <td>{{ evaluar_variacion(comparativos.variacion_margen_operativo_pp) }}</td>
+              </tr>
+              <tr>
+                <td>Margen bruto</td>
+                <td class="text-end">{{ '%.1f'|format(comparativos.margen_bruto_actual) ~ '%' if comparativos.margen_bruto_actual is not none else '—' }}</td>
+                <td class="text-end">{{ '%.1f'|format(comparativos.margen_bruto_anterior) ~ '%' if comparativos.margen_bruto_anterior is not none else '—' }}</td>
+                <td class="text-end">{{ '%.1f'|format(comparativos.variacion_margen_bruto_pp) ~ ' pp' if comparativos.variacion_margen_bruto_pp is not none else '—' }}</td>
+                <td>{{ evaluar_variacion(comparativos.variacion_margen_bruto_pp) }}</td>
+              </tr>
+              <tr>
+                <td>Ventas</td>
+                <td class="text-end">{{ comparativos.ingresos_actuales|monto if comparativos.ingresos_actuales is not none else '—' }}</td>
+                <td class="text-end">{{ comparativos.ingresos_anteriores|monto if comparativos.ingresos_anteriores is not none else '—' }}</td>
+                <td class="text-end">{{ '%.1f'|format(comparativos.variacion_ventas_pct) ~ '%' if comparativos.variacion_ventas_pct is not none else '—' }}</td>
+                <td>{{ evaluar_variacion(comparativos.variacion_ventas_pct) }}</td>
+              </tr>
+              <tr>
+                <td>Costo de Ventas</td>
+                <td class="text-end">{{ comparativos.costo_ventas_actual|abs|monto if comparativos.costo_ventas_actual is not none else '—' }}</td>
+                <td class="text-end">{{ comparativos.costo_ventas_anterior|abs|monto if comparativos.costo_ventas_anterior is not none else '—' }}</td>
+                <td class="text-end">{{ '%.1f'|format(comparativos.variacion_costo_ventas_pct) ~ '%' if comparativos.variacion_costo_ventas_pct is not none else '—' }}</td>
+                <td>{{ evaluar_variacion(comparativos.variacion_costo_ventas_pct, costo=true) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {% if not comparativos.periodo_anterior %}
+        <p class="text-muted-soft small mt-3 mb-0">Sube un balance del año anterior para comparar los márgenes.</p>
+        {% endif %}
+        {% if comparativos.margen_bruto_actual is none or comparativos.margen_operativo_actual is none %}
+        <p class="text-muted-soft small mt-3 mb-0">Algún margen no está disponible porque no se identificaron sus cuentas de ventas, costo de ventas o resultado operativo en la información cargada.</p>
+        {% endif %}
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="tab-pane fade" id="alertas-panel" role="tabpanel" aria-labelledby="alertas-tab" tabindex="0">
+      <div class="bc-card p-3">
+        <h6 class="fw-bold mb-3"><i class="bi bi-bell me-1 text-muted-soft"></i>Alertas</h6>
+        <p class="text-muted-soft small mb-3">Los umbrales comparativos son orientativos, no promedios del sector: caída de ventas desde 20% y deterioro de razones de costo o gastos desde 5 puntos porcentuales.</p>
+        {% if alertas %}
+        <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
+          {% for a in alertas %}
+          <li class="d-flex align-items-start gap-2 border-bottom pb-2">
+            <i class="bi {{ 'bi-exclamation-triangle-fill text-danger' if a.severidad == 'danger' else 'bi-exclamation-circle text-warning' }} fs-5"></i>
+            <div class="flex-grow-1">
+              <div class="fw-semibold">{{ a.titulo }}</div>
+              <p class="text-muted-soft small mb-1">{{ a.detalle }}</p>
+              <p class="small mb-0"><strong>Sugerencia:</strong> {{ a.sugerencia }}</p>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% elif tendencias|length < 2 %}
+        <p class="text-muted-soft small mb-0">Sube un balance de otro periodo para activar las alertas de variación.</p>
+        {% else %}
+        <p class="text-muted-soft small mb-0"><i class="bi bi-check2 text-success me-1"></i>Sin variaciones relevantes frente al periodo anterior.</p>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+  {% endif %}
+{% endblock %}

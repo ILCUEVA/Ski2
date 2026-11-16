@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% set active_page = 'mis_documentos' %}
+{% block title %}Mis documentos · Balancea{% endblock %}
+{% block page_heading %}Mis documentos{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+      <h3 class="fw-bold mb-1">Mis documentos</h3>
+      <p class="text-muted-soft mb-0">Historial de balances y libros mayores cargados para {{ empresa.nombre }}.</p>
+    </div>
+    <form method="post" action="{{ url_for('eliminar_todos_documentos') }}" onsubmit="return confirm('¿Borrar TODO el historial de documentos? Esto elimina todos los balances, libros mayores, informes generados y pagos registrados. Esta acción no se puede deshacer.');">
+      <button type="submit" class="btn btn-bc-outline border text-danger"><i class="bi bi-trash me-1"></i>Borrar todo el historial</button>
+    </form>
+  </div>
+
+  <h6 class="fw-bold mb-2">Balances</h6>
+  <div class="bc-card p-0 overflow-hidden mb-4">
+    <table class="table bc-table align-middle mb-0">
+      <thead>
+        <tr><th>Archivo</th><th>Periodo</th><th>Estado</th><th>Fecha de carga</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for b in balances %}
+        <tr>
+          <td><i class="bi bi-file-earmark-spreadsheet me-2 text-muted-soft"></i>{{ b.archivo_nombre }}</td>
+          <td>{{ b.periodo }}</td>
+          <td>
+            {% if b.estado == 'Borrador' %}
+              <span class="bc-badge-soft">Borrador</span>
+            {% else %}
+              <span class="bc-badge-success">Archivado</span>
+            {% endif %}
+          </td>
+          <td>{{ b.fecha_carga.strftime('%d %b %Y') if b.fecha_carga else '—' }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('estado_resultados') }}" class="me-2"><i class="bi bi-arrow-right"></i></a>
+            <form method="post" action="{{ url_for('eliminar_balance', balance_id=b.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar este balance junto con su libro mayor, cuentas e informes generados? Esta acción no se puede deshacer.');">
+              <button type="submit" class="btn btn-sm btn-bc-outline border text-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-muted-soft">Aún no has cargado balances.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h6 class="fw-bold mb-2">Libros mayores</h6>
+  <div class="bc-card p-0 overflow-hidden">
+    <table class="table bc-table align-middle mb-0">
+      <thead>
+        <tr><th>Archivo</th><th>Periodo</th><th>Fecha de carga</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for b in balances if b.archivo_libro_mayor %}
+        <tr>
+          <td><i class="bi bi-journal-text me-2 text-muted-soft"></i>{{ b.archivo_libro_mayor }}</td>
+          <td>{{ b.periodo }}</td>
+          <td>{{ b.fecha_carga.strftime('%d %b %Y') if b.fecha_carga else '—' }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('clasificacion') }}" class="me-2"><i class="bi bi-arrow-right"></i></a>
+            <form method="post" action="{{ url_for('eliminar_balance', balance_id=b.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar este libro mayor junto con el balance, cuentas e informes asociados? Esta acción no se puede deshacer.');">
+              <button type="submit" class="btn btn-sm btn-bc-outline border text-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-muted-soft">Aún no has cargado libros mayores.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h6 class="fw-bold mb-2 mt-4">Estado de Rendimiento Financiero</h6>
+  <div class="bc-card p-0 overflow-hidden">
+    <table class="table bc-table align-middle mb-0">
+      <thead>
+        <tr><th>Archivo</th><th>Periodo</th><th>Fecha de generación</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for i in informes %}
+        <tr>
+          <td><i class="bi bi-file-earmark-pdf me-2 text-muted-soft"></i>{{ i.archivo_nombre }}</td>
+          <td>{{ i.periodo }}</td>
+          <td>{{ i.fecha_generacion.strftime('%d %b %Y %H:%M') if i.fecha_generacion else '—' }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('descargar_informe', informe_id=i.id) }}" class="me-2"><i class="bi bi-download"></i></a>
+            <form method="post" action="{{ url_for('eliminar_informe', informe_id=i.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar este informe generado? Esta acción no se puede deshacer.');">
+              <button type="submit" class="btn btn-sm btn-bc-outline border text-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-muted-soft">Aún no has generado un Estado de Rendimiento Financiero.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h6 class="fw-bold mb-2 mt-4">Historial de pagos</h6>
+  <div class="bc-card p-0 overflow-hidden">
+    <table class="table bc-table align-middle mb-0">
+      <thead>
+        <tr><th>Monto</th><th>Concepto</th><th>Medio de pago</th><th>Fecha</th></tr>
+      </thead>
+      <tbody>
+        {% for pago in historial_pagos %}
+        <tr>
+          <td>${{ pago.monto|monto }} CLP</td>
+          <td>{{ pago.concepto }}</td>
+          <td><i class="bi bi-credit-card me-2 text-muted-soft"></i>{{ pago.medio_pago }}</td>
+          <td>{{ pago.fecha.strftime('%d %b %Y %H:%M') if pago.fecha else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-muted-soft">Aún no se ha registrado ningún pago.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% set active_page = 'packs' %}
+{% block title %}Packs de informes · Balancea{% endblock %}
+{% block page_heading %}Packs de informes{% endblock %}
+
+{% block content %}
+  <h3 class="fw-bold mb-1">Packs de informes</h3>
+  <p class="text-muted-soft mb-4">Compra informes para generar Estados de Rendimiento Financiero. Todos los packs incluyen acceso a Tendencias.</p>
+
+  {% if informes_disponibles > 0 %}
+  <div class="bc-card p-3 mb-3 d-flex align-items-center gap-2">
+    <i class="bi bi-ticket-perforated text-success fs-5"></i>
+    <span><strong>{{ informes_disponibles }} informe{{ 's' if informes_disponibles != 1 else '' }} disponible{{ 's' if informes_disponibles != 1 else '' }}</strong>{% if pack_actual %} · Pack {{ pack_actual }}{% endif %}</span>
+  </div>
+  <p class="text-muted-soft small mb-3">Debes usar todos los informes disponibles antes de comprar otro pack.</p>
+  {% endif %}
+  {% if hay_cuentas_revisadas %}
+  <div class="mb-3">
+    <a href="{{ url_for('estado_resultados') }}" class="btn btn-bc-outline border"><i class="bi bi-arrow-left me-1"></i>Volver al paso 3 · Estado de Rendimiento Financiero</a>
+  </div>
+  {% endif %}
+
+  <div class="row g-3">
+    {% for nombre, pack in packs.items() %}
+    <div class="col-md-4">
+      <div class="bc-card p-3 h-100 d-flex flex-column {{ 'border-primary' if pack_actual == nombre else '' }}" {% if pack_actual == nombre %}style="border-width:2px; border-color:var(--bc-primary) !important;"{% endif %}>
+        <span class="bc-badge-soft align-self-start mb-2">{{ 'Pack activo' if pack_actual == nombre else 'Pago único' }}</span>
+        <h5 class="fw-bold mb-1">{{ nombre }}</h5>
+        <div class="h4 fw-bold mb-1">${{ pack.precio|monto }} <span class="text-muted-soft small fw-normal">CLP · pago único</span></div>
+        <p class="text-muted-soft small mb-3">Incluye {{ pack.informes }} Estado{{ 's' if pack.informes != 1 else '' }} de Rendimiento Financiero.</p>
+        <ul class="list-unstyled small mb-3 flex-grow-1">
+          <li><i class="bi bi-check2 text-success me-1"></i>{{ pack.informes }} informe{{ 's' if pack.informes != 1 else '' }} para usar cuando lo necesites</li>
+          <li><i class="bi bi-check2 text-success me-1"></i>Acceso a Tendencias</li>
+        </ul>
+        <button type="button" class="btn {{ 'btn-bc-outline border' if pack_actual == nombre or informes_disponibles > 0 else 'btn-bc-primary' }} w-100" {% if informes_disponibles > 0 %}disabled title="Usa los informes disponibles antes de comprar otro pack"{% else %}data-bs-toggle="modal" data-bs-target="#modalPagoPack" data-pack="{{ nombre }}" data-precio="{{ pack.precio|monto }}" data-informes="{{ pack.informes }}"{% endif %}>Comprar {{ nombre }}</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <p class="text-muted-soft small mt-4 mb-0"><i class="bi bi-info-circle me-1"></i>El importe corresponde a un único pago, no recurrente. La activación es simulada en esta versión y no procesa cobros reales.</p>
+
+  <div class="modal fade" id="modalPagoPack" tabindex="-1" aria-labelledby="modalPagoPackTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form method="post" action="{{ url_for('seleccionar_pack') }}">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalPagoPackTitulo"><i class="bi bi-credit-card me-2"></i>Pago del pack</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="pack" id="packSeleccionado">
+            <input type="hidden" name="return_to" value="{{ 'estado_resultados' if return_to_estado else 'packs' }}">
+            <p class="mb-1"><strong id="nombrePackPago"></strong> · <span id="cantidadInformesPago"></span></p>
+            <div class="bc-result-figure mb-3">$<span id="precioPackPago"></span> CLP</div>
+            <label class="form-label small">Selecciona un medio de pago</label>
+            <div class="d-flex flex-column gap-2 mb-3">
+              {% for medio in medios_pago %}
+              <label class="form-check border rounded-3 px-3 py-2">
+                <input class="form-check-input me-2" type="radio" name="medio_pago" value="{{ medio }}" {{ 'checked' if loop.first else '' }} required>
+                <span class="form-check-label">{{ medio }}</span>
+              </label>
+              {% endfor %}
+            </div>
+            <p class="text-muted-soft small mb-0"><i class="bi bi-info-circle me-1"></i>Pago único simulado para desarrollo; no se procesan cobros reales.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-bc-outline border" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-bc-primary">Confirmar pago</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('modalPagoPack').addEventListener('show.bs.modal', function (evento) {
+    var boton = evento.relatedTarget;
+    document.getElementById('packSeleccionado').value = boton.getAttribute('data-pack');
+    document.getElementById('nombrePackPago').textContent = boton.getAttribute('data-pack');
+    document.getElementById('precioPackPago').textContent = boton.getAttribute('data-precio');
+    var cantidad = boton.getAttribute('data-informes');
+    document.getElementById('cantidadInformesPago').textContent = cantidad + ' informe' + (cantidad === '1' ? '' : 's');
+  });
+</script>
+{% endblock %}

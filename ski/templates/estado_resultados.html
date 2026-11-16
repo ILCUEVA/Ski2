@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% from "_steps.html" import steps with context %}
+{% set active_page = 'estado_resultados' %}
+{% block title %}Estado de Rendimiento Financiero · Balancea{% endblock %}
+{% block page_heading %}Estado de Rendimiento Financiero{% endblock %}
+
+{% block content %}
+  {{ steps(3) }}
+
+  <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+      <h3 class="fw-bold mb-1">Estado de Rendimiento Financiero</h3>
+      <p class="text-muted-soft mb-0">{{ empresa.nombre }} · Actividad {{ (empresa.rubro or '') | lower }} no financiera · NIIF 18 (versión simplificada)</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('clasificacion') }}" class="btn btn-bc-outline border"><i class="bi bi-list-check me-1"></i>Revisar cuentas</a>
+      {% if informes_disponibles > 0 %}
+      <button type="button" class="btn btn-bc-primary" data-bs-toggle="modal" data-bs-target="#modalPeriodoInforme"><i class="bi bi-download me-1"></i>Generar PDF · {{ informes_disponibles }} disponible{{ 's' if informes_disponibles != 1 else '' }}</button>
+      <span id="estadoGenerarPdf" class="small text-danger" role="status" hidden></span>
+      {% else %}
+      <a href="{{ url_for('packs', return_to='estado_resultados') }}" class="btn btn-bc-primary"><i class="bi bi-box-seam me-1"></i>Comprar pack de informes</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <ul class="nav nav-tabs mb-3" style="border-bottom-color: var(--bc-border);">
+    <li class="nav-item">
+      <span class="nav-link active" style="color: var(--bc-primary-dark); border-color: var(--bc-border) var(--bc-border) #fff;">Estado de Rendimiento Financiero</span>
+    </li>
+  </ul>
+
+  <div class="bc-card p-3 mb-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <span class="fw-semibold"><i class="bi bi-file-earmark-spreadsheet me-1"></i>{{ balance.archivo_nombre if balance else 'Sin balance' }}</span>
+      <span class="text-muted-soft small">01 ene – 31 dic {{ balance.periodo if balance else empresa.anio_vigente }}</span>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <span class="bc-badge-soft">Borrador · Revisión pendiente</span>
+      <span class="text-muted-soft small">{{ informes_disponibles }} informes disponibles</span>
+    </div>
+  </div>
+
+  {% if balance and cuentas %}
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="bc-card p-0 overflow-hidden">
+        <table class="table bc-table align-middle mb-0">
+          <thead>
+            <tr><th>Estado de Resultados</th><th class="text-end">{{ balance.periodo if balance else empresa.anio_vigente }} <span class="d-block text-muted-soft" style="font-size:0.65rem; font-weight:400;">{{ empresa.moneda }}</span></th></tr>
+          </thead>
+          <tbody>
+            {% for fila in filas_estado %}
+              {% if fila.tipo == 'grupo' %}
+              <tr class="bc-row-grupo"><td colspan="2">{{ fila.texto }}</td></tr>
+              {% elif fila.tipo == 'final' %}
+              <tr class="bc-row-final"><td>{{ fila.concepto }}</td><td class="text-end">{{ '(' + (fila.valor|abs|monto) + ')' if fila.valor < 0 else fila.valor|monto }}</td></tr>
+              {% else %}
+              <tr class="{{ 'bc-row-subtotal' if fila.tipo == 'subtotal' else ('bc-row-resultado' if fila.tipo == 'resultado' else '') }} {{ 'bc-row-clickable' if fila.tipo == 'detalle' else '' }}"
+                {% if fila.tipo == 'detalle' %}data-cuenta-id="{{ fila.cuenta_id }}"{% endif %}>
+                <td>
+                  {{ fila.concepto }}
+                  {% if fila.tipo == 'detalle' %}<span class="text-muted-soft small ms-2"><i class="bi bi-journal-text"></i> Ver movimientos</span>{% endif %}
+                  {% if fila.tipo in ('subtotal', 'resultado') %}<i class="bi bi-check2-circle text-success ms-1"></i>{% endif %}
+                  {% if fila.obligatorio %}<span class="bc-badge-soft ms-2" style="font-size:0.65rem;">Subtotal NIIF 18</span>{% endif %}
+                </td>
+                <td class="text-end">{{ '(' + (fila.valor|abs|monto) + ')' if fila.valor < 0 else fila.valor|monto }}</td>
+              </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="text-muted-soft small mt-2">Se muestran las cuentas revisadas. Selecciona <strong>Ver movimientos</strong> para consultar el detalle importado del libro mayor.</p>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="bc-card p-3 mb-3">
+        <h6 class="fw-bold mb-1">Tu resultado, en claro</h6>
+        <div class="bc-result-figure">${{ resumen.resultado_periodo|monto }}</div>
+        <div class="text-muted-soft small">Resultado del periodo</div>
+        {% if resumen.margen is not none %}
+        <div class="text-muted-soft small">{{ '%.1f'|format(resumen.margen) }} % sobre los ingresos</div>
+        {% endif %}
+      </div>
+
+      <div class="bc-card p-3 mb-3">
+        <h6 class="fw-bold mb-3">Cinco categorías. Un informe.</h6>
+        <ul class="list-unstyled mb-0 d-flex flex-column gap-2 small">
+          {% for cat in categorias %}
+          <li class="d-flex justify-content-between">
+            <span>{{ loop.index }}. {{ cat }}</span>
+            <span class="fw-semibold">{{ resumen.resumen_categorias[cat] }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        <p class="text-muted-soft small mt-3 mb-0">Las categorías 4 y 5 solo se agregan si hay cuentas que lo requieran.</p>
+      </div>
+
+      <div class="bc-card p-3 d-flex align-items-start gap-2">
+        <i class="bi bi-exclamation-circle text-muted-soft fs-5"></i>
+        <div>
+          <div class="fw-semibold">Antes de darlo por terminado</div>
+          <p class="text-muted-soft small mb-2">Revisa las cuentas, las partidas contables y las notas con tu contador. Este borrador no certifica su cumplimiento.</p>
+          <a href="{{ url_for('clasificacion') }}" class="small text-decoration-none">Revisar clasificación <i class="bi bi-arrow-right"></i></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-muted-soft small mt-4 mb-0">
+    Versión simplificada de NIIF 18: las 3 categorías obligatorias (operación, inversión y financiación) siempre se presentan; impuesto a las ganancias
+    y operaciones discontinuadas solo se agregan si hay cuentas clasificadas en ellas. Los subtotales "Resultado operativo" y "Resultado antes de financiación
+    e impuestos a las ganancias" son obligatorios. Si la empresa presenta sus gastos por función, NIIF 18 exige revelar en notas su desglose por naturaleza
+    (depreciación, amortización, deterioros, etc.); esa nota detallada aún no está implementada en esta versión.
+  </p>
+  {% else %}
+  <div class="bc-card p-4 text-center">
+    <i class="bi bi-file-earmark-bar-graph fs-1 text-muted-soft"></i>
+    {% if balance and balance.cuentas %}
+    <h5 class="fw-bold mt-3">Aún no hay cuentas revisadas</h5>
+    <p class="text-muted-soft">Confirma las cuentas en el paso de clasificación para incluirlas en el Estado de Rendimiento Financiero.</p>
+    <a href="{{ url_for('clasificacion') }}" class="btn btn-bc-primary">Revisar cuentas</a>
+    {% else %}
+    <h5 class="fw-bold mt-3">Aún no hay un balance clasificado</h5>
+    <p class="text-muted-soft">Sube tu balance y libro mayor, y confirma la clasificación de tus cuentas para generar el Estado de Rendimiento Financiero.</p>
+    <a href="{{ url_for('subir_balance') }}" class="btn btn-bc-primary">Subir Información Contable</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="modal fade" id="modalMovimientos" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-list-ul me-2"></i>Movimientos de la cuenta</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modalMovimientosBody">
+          <div class="text-center text-muted-soft py-4">
+            <div class="spinner-border spinner-border-sm me-2"></div>Cargando movimientos...
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-bc-outline border" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% if informes_disponibles > 0 %}
+  <div class="modal fade" id="modalPeriodoInforme" tabindex="-1" aria-labelledby="modalPeriodoInformeTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="formGenerarPdf" method="post" action="{{ url_for('exportar_estado_resultados') }}">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalPeriodoInformeTitulo"><i class="bi bi-calendar-range me-2"></i>Periodo del informe</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-3">Elige qué periodos incluir en el PDF:</p>
+            <div class="d-flex flex-column gap-2">
+              <label class="form-check border rounded-3 px-3 py-2">
+                <input class="form-check-input me-2" type="radio" name="periodo_modo" value="actual" checked>
+                <span class="form-check-label">Solo el año actual ({{ balance.periodo if balance else empresa.anio_vigente }})</span>
+              </label>
+              {% if balance_anterior %}
+              <label class="form-check border rounded-3 px-3 py-2">
+                <input class="form-check-input me-2" type="radio" name="periodo_modo" value="comparar">
+                <span class="form-check-label">Comparar {{ balance.periodo }} con {{ balance_anterior.periodo }}</span>
+              </label>
+              {% else %}
+              <div class="border rounded-3 px-3 py-2 text-muted-soft small">No hay un balance del año anterior con cuentas revisadas para comparar.</div>
+              {% endif %}
+            </div>
+            <p class="text-muted-soft small mt-3 mb-0">Este informe usará 1 de tus {{ informes_disponibles }} informes disponibles.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-bc-outline border" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-bc-primary">Descargar PDF</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  var modalMovimientos = document.getElementById('modalMovimientos');
+  var cuerpoModal = document.getElementById('modalMovimientosBody');
+  var cargando = '<div class="text-center text-muted-soft py-4"><div class="spinner-border spinner-border-sm me-2"></div>Cargando movimientos...</div>';
+
+  document.querySelectorAll('.bc-row-clickable').forEach(function (fila) {
+    fila.addEventListener('click', function () {
+      var cuentaId = fila.getAttribute('data-cuenta-id');
+      cuerpoModal.innerHTML = cargando;
+      bootstrap.Modal.getOrCreateInstance(modalMovimientos).show();
+      fetch('/cuentas/' + cuentaId + '/movimientos')
+        .then(function (resp) { return resp.text(); })
+        .then(function (html) { cuerpoModal.innerHTML = html; })
+        .catch(function () {
+          cuerpoModal.innerHTML = '<p class="text-danger mb-0">No se pudieron cargar los movimientos.</p>';
+        });
+    });
+  });
+
+  var formGenerarPdf = document.getElementById('formGenerarPdf');
+  if (formGenerarPdf) {
+    formGenerarPdf.addEventListener('submit', async function (evento) {
+      evento.preventDefault();
+      var boton = formGenerarPdf.querySelector('button[type="submit"]');
+      var estado = document.getElementById('estadoGenerarPdf');
+      boton.disabled = true;
+      estado.hidden = true;
+      try {
+        var respuesta = await fetch(formGenerarPdf.action, {
+          method: 'POST',
+          body: new FormData(formGenerarPdf)
+        });
+        var tipoContenido = respuesta.headers.get('Content-Type') || '';
+        if (!respuesta.ok || !tipoContenido.includes('application/pdf')) {
+          if (respuesta.redirected) {
+            window.location.assign(respuesta.url);
+            return;
+          }
+          throw new Error('No se pudo generar el PDF.');
+        }
+
+        var archivo = await respuesta.blob();
+        var disposicion = respuesta.headers.get('Content-Disposition') || '';
+        var coincidencia = disposicion.match(/filename="?([^";]+)"?/i);
+        var enlace = document.createElement('a');
+        var urlArchivo = URL.createObjectURL(archivo);
+        enlace.href = urlArchivo;
+        enlace.download = coincidencia ? coincidencia[1] : 'Estado_Rendimiento_Financiero.pdf';
+        document.body.appendChild(enlace);
+        enlace.click();
+        enlace.remove();
+        window.setTimeout(function () { URL.revokeObjectURL(urlArchivo); }, 1000);
+        window.setTimeout(function () { window.location.assign('{{ url_for("dashboard") }}'); }, 500);
+      } catch (error) {
+        estado.textContent = 'No se pudo descargar el PDF. Intenta nuevamente.';
+        estado.hidden = false;
+        boton.disabled = false;
+      }
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% set active_page = 'mpm' %}
+{% block title %}MPM · Balancea{% endblock %}
+{% block page_heading %}MPM{% endblock %}
+
+{% block content %}
+  <h3 class="fw-bold mb-1">Medidas de Rendimiento Definidas por la Gerencia (MPM)</h3>
+  <p class="text-muted-soft mb-4">Subtotales propios de la empresa, complementarios a las categorías obligatorias de NIIF 18.</p>
+
+  {% if not acceso_habilitado %}
+  <p class="text-muted-soft mb-3">Según tu rubro ({{ empresa.rubro }}), estas son las MPM más relevantes para tu empresa:</p>
+  <div class="row g-3 mb-4">
+    {% for nombre in nombres_sugeridos %}
+    <div class="col-12">
+      <div class="bc-card p-3 h-100 d-flex flex-column">
+        <span class="bc-badge-soft align-self-start mb-2">Sugerencia MPM</span>
+        <h6 class="fw-bold mb-3">{{ nombre }}</h6>
+        <a href="{{ url_for('packs') }}" class="btn btn-bc-primary mt-auto d-flex align-items-center justify-content-center gap-2">
+          <i class="bi bi-lock"></i> Ver cálculo y criterio
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="bc-card p-4 text-center">
+    <i class="bi bi-bar-chart-steps fs-1 text-muted-soft"></i>
+    <h5 class="fw-bold mt-3">¿Por qué importan las MPM?</h5>
+    <p class="text-muted-soft mb-0">
+      Al definir y revelar tus propias MPM de forma clara y consistente, conciliadas con los subtotales de NIIF 18,
+      le das a inversionistas, bancos y otros usuarios una forma transparente de comparar el rendimiento de tu
+      empresa entre periodos y frente a otras empresas de tu mismo rubro.
+    </p>
+  </div>
+  {% else %}
+  <div class="bc-card p-3 d-flex align-items-start gap-3 mb-4">
+    <i class="bi bi-info-circle text-muted-soft fs-5"></i>
+    <div>
+      <div class="fw-semibold mb-1">¿Qué es una MPM?</div>
+      <p class="text-muted-soft mb-0">
+        NIIF 18 exige revelar las "Management-defined Performance Measures": subtotales de ingresos y gastos que no están
+        especificados por las normas contables, pero que la gerencia usa en sus comunicaciones públicas para explicar
+        su propia visión del rendimiento financiero de la empresa (por ejemplo, un "EBITDA ajustado" o un resultado
+        sin partidas no recurrentes).
+      </p>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      {% if balance and balance.cuentas %}
+      <p class="text-muted-soft small mb-2">Seleccionadas para tu rubro ({{ empresa.rubro }}).</p>
+      <div class="row g-3">
+        {% for m in mpm_sugeridas %}
+        <div class="col-md-6">
+          <div class="bc-card p-3 h-100 d-flex flex-column">
+            <span class="bc-badge-soft align-self-start mb-2">Sugerencia MPM</span>
+            <h6 class="fw-bold mb-1">{{ m.nombre }}</h6>
+            <div class="h4 fw-bold mb-1">${{ '(' + (m.valor|abs|monto) + ')' if m.valor < 0 else m.valor|monto }}</div>
+            <p class="text-muted-soft small mb-2">{{ m.descripcion }}</p>
+            <p class="text-muted-soft small mb-3"><i class="bi bi-calculator me-1"></i>{{ m.formula }}</p>
+            {% if m.aproximado %}
+            <span class="bc-badge-warning align-self-start mb-3">Estimación aproximada</span>
+            {% endif %}
+            <button type="button" class="btn btn-bc-primary mt-auto" disabled>Implementar en mi empresa</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <p class="text-muted-soft small mt-3">
+        Calculadas a partir de tu Estado de Rendimiento Financiero más reciente ({{ balance.archivo_nombre }}, periodo {{ balance.periodo }}).
+        Son versiones simplificadas; valídalas con tu contador antes de usarlas en comunicaciones oficiales.
+      </p>
+      {% else %}
+      <div class="bc-card p-4 text-center">
+        <i class="bi bi-clipboard-data fs-1 text-muted-soft"></i>
+        <h5 class="fw-bold mt-3">Sube tu información contable para ver sugerencias de MPM</h5>
+        <p class="text-muted-soft mb-3">
+          Apenas subas tu balance y libro mayor, calcularemos aquí sugerencias simples como EBITDA, EBIT,
+          Resultado Operacional Ajustado y Flujo de Caja Libre aproximado.
+        </p>
+        <a href="{{ url_for('subir_balance') }}" class="btn btn-bc-primary">Subir Información Contable</a>
+      </div>
+      {% endif %}
+    </div>
+    <div class="col-lg-5">
+      <div class="bc-card p-3">
+        <h6 class="fw-bold mb-3">Requisitos de NIIF 18 para una MPM</h6>
+        <ul class="list-unstyled d-flex flex-column gap-2 small mb-0">
+          <li><i class="bi bi-check2 text-success me-1"></i>Debe conciliarse con el subtotal NIIF más cercano.</li>
+          <li><i class="bi bi-check2 text-success me-1"></i>Debe explicarse por qué es útil para los usuarios del informe.</li>
+          <li><i class="bi bi-check2 text-success me-1"></i>Debe revelarse de forma consistente periodo a periodo.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+{% endblock %}

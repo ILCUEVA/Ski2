@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% from "_steps.html" import steps with context %}
+{% set active_page = 'subir_balance' %}
+{% block title %}Subir Información Contable · Balancea{% endblock %}
+{% block page_heading %}Subir Información Contable{% endblock %}
+
+{% block content %}
+  {{ steps(1) }}
+
+  <h3 class="fw-bold mb-1">El primer paso: tu balance</h3>
+  <p class="text-muted-soft mb-4">Descarga tu importador, completa los datos contables y súbelo para preparar el estado de resultados.</p>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-7">
+      <div class="bc-card p-3 h-100">
+        <h6 class="fw-bold mb-3">Primero, descarga tu importador</h6>
+        <ol class="small text-muted-soft ps-3 mb-3">
+          <li>Usa la plantilla para organizar tu balance antes de cargarlo a Balancea.</li>
+          <li>Completa tu información: agrega cuentas, débitos y créditos.</li>
+          <li>Sube el importador completado.</li>
+        </ol>
+        <div class="d-flex align-items-center justify-content-between gap-2 border rounded-3 p-2 mb-2">
+          <span class="d-flex align-items-center gap-2 small">
+            <i class="bi bi-file-earmark-excel text-success fs-5"></i> Importador_balance.xlsx
+          </span>
+          <a href="{{ url_for('descargar_plantilla_balance') }}" class="btn btn-bc-primary btn-sm d-flex align-items-center gap-1">
+            <i class="bi bi-download"></i> Descargar
+          </a>
+        </div>
+        <div class="d-flex align-items-center justify-content-between gap-2 border rounded-3 p-2 mb-3">
+          <span class="d-flex align-items-center gap-2 small">
+            <i class="bi bi-file-earmark-excel text-success fs-5"></i> Importador_libro_mayor.xlsx
+          </span>
+          <a href="{{ url_for('descargar_plantilla_libro_mayor') }}" class="btn btn-bc-primary btn-sm d-flex align-items-center gap-1">
+            <i class="bi bi-download"></i> Descargar
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="bc-card p-3 h-100">
+        <h6 class="fw-bold mb-3">¿Qué debe incluir?</h6>
+        <ul class="list-unstyled small mb-3 d-flex flex-column gap-2">
+          <li><i class="bi bi-check2 text-success me-1"></i>Código y nombre de cada cuenta</li>
+          <li><i class="bi bi-check2 text-success me-1"></i>Ingresos y gastos del periodo</li>
+          <li><i class="bi bi-check2 text-success me-1"></i>Periodo y moneda consistentes</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="bc-card p-3 mb-4">
+    <h6 class="fw-bold mb-3">Sube tu importador completado</h6>
+    <form method="post" enctype="multipart/form-data">
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label small">Periodo contable</label>
+          <select class="form-select" name="periodo">
+            {% for anio in range(2026, 2023, -1) %}
+            <option value="{{ anio }}" {{ 'selected' if anio == empresa.anio_vigente else '' }}>Enero – diciembre de {{ anio }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small">Moneda de presentación</label>
+          <select class="form-select" name="moneda">
+            {% for moneda in monedas %}
+            <option value="{{ moneda.codigo }}" {{ 'selected' if moneda.codigo == moneda_actual else '' }}>
+              {{ moneda.codigo }} – {{ moneda.nombre }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-2">
+        <div class="col-md-6">
+          <label class="form-label small">Balance (hoja «Balance»)</label>
+          <div class="bc-dropzone p-3 text-start">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="bi bi-file-earmark-excel fs-4 text-success"></i>
+              <span class="small text-muted-soft">Usa el formato de Importador_balance.xlsx</span>
+            </div>
+            <input type="file" class="form-control form-control-sm" name="balance_file" accept=".xlsx" required>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small">Libro mayor <span class="text-muted-soft">(opcional)</span></label>
+          <div class="bc-dropzone p-3 text-start">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="bi bi-file-earmark-excel fs-4 text-success"></i>
+              <span class="small text-muted-soft">Usa el formato de Importador_libro_mayor.xlsx</span>
+            </div>
+            <input type="file" class="form-control form-control-sm" name="libro_mayor_file" accept=".xlsx">
+          </div>
+        </div>
+      </div>
+      <p class="text-muted-soft small mb-3">Formatos XLSX · Máximo 20 MB · un periodo por archivo. Si no subes el libro mayor, podrás clasificar tus cuentas igual, pero no se mostrará el detalle de movimientos.</p>
+
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <span class="text-muted-soft small">Actividad principal: {{ (empresa.rubro or 'comercial') | lower }} · Empresa no financiera</span>
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('dashboard') }}" class="btn btn-bc-outline border">Cancelar</a>
+          <button type="submit" class="btn btn-bc-primary d-flex align-items-center gap-2">
+            Validar y clasificar <i class="bi bi-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+      <p class="text-muted-soft small mt-2 mb-0">Las cuentas se clasifican automáticamente según NIIF 18 y quedan pendientes de tu revisión en el siguiente paso.</p>
+    </form>
+  </div>
+
+  <div class="bc-card p-3 d-flex align-items-start gap-3 mb-4">
+    <i class="bi bi-info-circle text-muted-soft fs-5"></i>
+    <div>
+      <div class="fw-semibold">Un balance no lo cuenta todo</div>
+      <div class="text-muted-soft small">Necesitamos entender la situación por sí solo no basta: haz la revisión de la clasificación contable.</div>
+    </div>
+  </div>
+  {% endblock %}

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Balancea{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-icons/bootstrap-icons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <div class="bc-shell">
+    <aside class="bc-sidebar">
+      <a href="{{ url_for('dashboard') }}" class="bc-logo">
+        <span class="bc-logo-mark"><i class="bi bi-bar-chart-fill"></i></span>
+        balancea
+      </a>
+
+      <div class="mt-3 border rounded-3 w-100 px-3 py-2" style="background-color: var(--bc-primary-light);">
+        <span class="d-block fw-semibold" style="font-size:0.9rem;color:var(--bc-primary-dark);">{{ empresa.nombre if empresa else 'Tu empresa' }}</span>
+        <span class="d-block text-muted-soft" style="font-size:0.75rem;">{{ empresa.tipo if empresa else 'Pyme' }} · {{ empresa.pais if empresa else 'Colombia' }}</span>
+      </div>
+
+      <nav class="bc-sidebar-section d-flex flex-column gap-1">
+        <a href="{{ url_for('dashboard') }}" class="bc-nav-link {{ 'active' if active_page == 'inicio' else '' }}">
+          <i class="bi bi-house-door"></i> Inicio
+        </a>
+        <a href="{{ url_for('subir_balance') }}" class="bc-nav-link {{ 'active' if active_page == 'subir_balance' else '' }}">
+          <i class="bi bi-file-earmark-bar-graph"></i> Estado de Rendimiento Financiero
+        </a>
+        <a href="{{ url_for('toma_decisiones') }}" class="bc-nav-link {{ 'active' if active_page == 'toma_decisiones' else '' }}">
+          <i class="bi bi-graph-up-arrow"></i> Tendencias
+        </a>
+        <a href="{{ url_for('packs') }}" class="bc-nav-link {{ 'active' if active_page == 'packs' else '' }}">
+          <i class="bi bi-box-seam"></i> Packs
+        </a>
+        <a href="{{ url_for('mis_documentos') }}" class="bc-nav-link {{ 'active' if active_page == 'mis_documentos' else '' }}">
+          <i class="bi bi-folder2-open"></i> Mis documentos
+        </a>
+      </nav>
+
+      <div class="bc-sidebar-footer d-flex flex-column gap-1">
+        <a href="{{ url_for('manual_usuario') }}" class="bc-nav-link {{ 'active' if active_page == 'manual_usuario' else '' }}">
+          <i class="bi bi-life-preserver"></i> Manual de usuario
+        </a>
+        <a href="{{ url_for('configuracion') }}" class="bc-nav-link {{ 'active' if active_page == 'configuracion' else '' }}">
+          <i class="bi bi-gear"></i> Configuración
+        </a>
+        <a href="{{ url_for('logout') }}" class="bc-nav-link">
+          <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+        </a>
+      </div>
+    </aside>
+
+    <div class="bc-main">
+      <header class="bc-topbar">
+        <div>
+          <span class="fw-semibold">{% block page_heading %}{% endblock %}</span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn btn-sm btn-bc-outline border rounded-circle" style="width:36px;height:36px;">
+            <i class="bi bi-bell"></i>
+          </button>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-bc-outline border d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-person-circle"></i>
+              <span>Mi cuenta</span>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{{ url_for('configuracion') }}">Configuración</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('logout') }}">Cerrar sesión</a></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+
+      <main class="bc-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

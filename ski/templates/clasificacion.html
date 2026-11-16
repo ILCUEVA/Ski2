@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% from "_steps.html" import steps with context %}
+{% set active_page = 'clasificacion' %}
+{% block title %}Clasificación · Balancea{% endblock %}
+{% block page_heading %}Clasificación{% endblock %}
+
+{% block content %}
+  {{ steps(2) }}
+
+  <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+      <h3 class="fw-bold mb-1">Cada cuenta, en su lugar</h3>
+      <p class="text-muted-soft mb-0">Revisa las categorías sugeridas y confirma tus cuentas antes de preparar el informe.</p>
+    </div>
+    <span class="bc-badge-soft">Revisión en curso</span>
+  </div>
+
+  <div class="row g-3 mb-3 small text-muted-soft">
+    <div class="col-6 col-lg-3">
+      <div class="text-uppercase" style="font-size:0.7rem;">Empresa</div>
+      <div class="text-body fw-semibold">{{ empresa.nombre }}</div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="text-uppercase" style="font-size:0.7rem;">Rubro principal</div>
+      <div class="text-body fw-semibold">{{ empresa.rubro }}</div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="text-uppercase" style="font-size:0.7rem;">Periodo</div>
+      <div class="text-body fw-semibold">Ene – dic {{ balance.periodo if balance else empresa.anio_vigente }}</div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="text-uppercase" style="font-size:0.7rem;">Importador</div>
+      <div class="text-body fw-semibold">
+        <i class="bi bi-file-earmark-spreadsheet me-1"></i>{{ balance.archivo_nombre if balance else '—' }}
+        {% if balance and balance.archivo_libro_mayor %}<br><i class="bi bi-journal-text me-1"></i>{{ balance.archivo_libro_mayor }}{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="bc-card p-3 mb-3">
+    <div class="row align-items-center g-3">
+      <div class="col-md-8">
+        <div class="d-flex gap-4 flex-wrap mb-2">
+          <div><span class="h5 fw-bold">{{ total }}</span> <span class="text-muted-soft small d-block">cuentas de resultados</span></div>
+          <div><span class="h5 fw-bold text-success">{{ revisadas }}</span> <span class="text-muted-soft small d-block">revisadas</span></div>
+          <div><span class="h5 fw-bold" style="color:var(--bc-warning);">{{ pendientes }}</span> <span class="text-muted-soft small d-block">pendientes de revisión</span></div>
+        </div>
+        <div class="progress" style="height:8px;">
+          <div class="progress-bar" role="progressbar" style="width: {{ porcentaje }}%; background-color: var(--bc-primary);"></div>
+        </div>
+      </div>
+      <div class="col-md-4 text-md-end">
+        <div class="fw-bold">{{ porcentaje }}% revisado</div>
+        <div class="text-muted-soft small">{{ revisadas }} de {{ total }} cuentas</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-5">
+      <input type="search" class="form-control" placeholder="Buscar por código o nombre de cuenta">
+    </div>
+    <div class="col-md-3">
+      <select class="form-select">
+        <option>Todas las categorías</option>
+        {% for cat in categorias %}<option>{{ cat }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <select class="form-select">
+        <option>Todos los estados</option>
+        <option>Revisado</option>
+        <option>Por revisar</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="bc-card p-0 overflow-hidden mb-3">
+        <table class="table bc-table align-middle mb-0">
+          <thead>
+            <tr><th>Cuenta</th><th>Importe</th><th>Categoría NIIF 18</th><th>Observación</th><th>Revisión</th></tr>
+          </thead>
+          <tbody>
+            {% for c in cuentas %}
+            <tr id="cuenta-{{ c.id }}" class="{{ 'is-selected' if cuenta_en_revision and c.id == cuenta_en_revision.id else '' }}">
+              <td>
+                <span class="text-muted-soft">{{ c.codigo }}</span><br>
+                <span class="fw-semibold">{{ c.nombre }}</span>
+              </td>
+              <td>{{ '(' + (c.importe|abs|monto) + ')' if c.importe < 0 else c.importe|monto }}</td>
+              <td>{{ c.categoria_niif }}</td>
+              <td style="min-width:220px;">
+                <form method="post" action="{{ url_for('actualizar_observacion', cuenta_id=c.id) }}" class="d-flex gap-1">
+                  <input type="text" name="observacion" class="form-control form-control-sm"
+                    placeholder="Ej: es un interés de préstamo bancario" value="{{ c.observacion or '' }}">
+                  <button type="submit" class="btn btn-sm btn-bc-outline border flex-shrink-0" title="Guardar y reclasificar según la observación">
+                    <i class="bi bi-arrow-repeat"></i>
+                  </button>
+                </form>
+              </td>
+              <td>
+                {% if c.revisado %}
+                  <span class="bc-badge-success"><i class="bi bi-check2 me-1"></i>Revisado</span>
+                {% else %}
+                  <div class="d-flex gap-2">
+                    <button type="button" class="bc-icon-btn bc-icon-btn-no" title="No, revisar criterio"
+                      data-bs-toggle="modal" data-bs-target="#modalCriterio"
+                      data-cuenta="{{ c.nombre }}" data-categoria="{{ c.categoria_niif }}"
+                      data-criterio="{{ criterios[c.id] }}">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                    <form method="post" action="{{ url_for('confirmar_cuenta', cuenta_id=c.id) }}">
+                      <input type="hidden" name="categoria" value="{{ c.categoria_niif }}">
+                      <button type="submit" class="bc-icon-btn bc-icon-btn-si" title="Sí, confirmar categoría">
+                        <i class="bi bi-check-lg"></i>
+                      </button>
+                    </form>
+                  </div>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-muted-soft">Sube un balance para ver sus cuentas aquí.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="text-muted-soft small mb-1">{{ total }} cuentas de resultados · Código y subcuenta. Mostrando {{ total }} de {{ total }}.</p>
+      <p class="text-muted-soft small"><i class="bi bi-info-circle me-1"></i>Escribe una observación sobre una cuenta y guarda con <i class="bi bi-arrow-repeat"></i> para que Balancea reasigne automáticamente su categoría NIIF 18 según lo que describas.</p>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="bc-card p-3">
+        <h6 class="fw-bold mb-3">Tu clasificación, de un vistazo</h6>
+        <ul class="list-unstyled mb-0 d-flex flex-column gap-2 small">
+          {% for cat in categorias %}
+          <li class="d-flex justify-content-between">
+            <span>{{ loop.index }}. {{ cat }}</span>
+            <span class="fw-semibold">{{ resumen_categorias[cat] }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        <p class="text-muted-soft small mt-3 mb-0">Sugerencias sujetas a revisión contable.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bc-card p-3 mt-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <span class="text-muted-soft small">
+      {% if pendientes > 0 %}Aún tienes {{ pendientes }} cuenta{{ 's' if pendientes != 1 else '' }} por revisar.{% else %}Todas las cuentas fueron revisadas.{% endif %}
+    </span>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-bc-outline border">Guardar borrador</button>
+      {% if pendientes > 0 %}
+      <form id="formConfirmarTodas" method="post" action="{{ url_for('confirmar_todas_cuentas') }}">
+        <button type="submit" class="btn btn-bc-outline border">
+          <i class="bi bi-check2-all me-1"></i>Marcar todas revisadas
+        </button>
+      </form>
+      {% endif %}
+      <a href="{{ url_for('estado_resultados') }}" class="btn btn-bc-primary {{ 'disabled' if revisadas == 0 else '' }}">
+        {% if total == 0 %}Sube un balance para continuar{% elif revisadas == 0 %}Revisa una cuenta para continuar{% else %}Generar Estado de Rendimiento Financiero{% endif %}
+      </a>
+    </div>
+  </div>
+  <p class="text-muted-soft small text-end mt-1 mb-0">
+    {% if total == 0 %}
+      Sube un balance para revisar sus cuentas.
+    {% elif revisadas > 0 and pendientes > 0 %}
+      Se incluirán {{ revisadas }} cuenta{{ 's' if revisadas != 1 else '' }} revisada{{ 's' if revisadas != 1 else '' }}; las pendientes quedarán fuera.
+    {% elif revisadas == 0 and total > 0 %}
+      Revisa al menos una cuenta para generar el estado.
+    {% else %}
+      Todas las cuentas revisadas.
+    {% endif %}
+  </p>
+
+  <div class="modal fade" id="modalCriterio" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-info-circle me-2"></i>Criterio de clasificación</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="fw-semibold mb-1" id="modalCriterioCuenta"></p>
+          <p class="text-muted-soft small mb-3" id="modalCriterioCategoria"></p>
+          <p class="mb-0" id="modalCriterioTexto"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-bc-outline border" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('modalCriterio').addEventListener('show.bs.modal', function (evento) {
+    var boton = evento.relatedTarget;
+    document.getElementById('modalCriterioCuenta').textContent = boton.getAttribute('data-cuenta');
+    document.getElementById('modalCriterioCategoria').textContent = 'Categoría sugerida: ' + boton.getAttribute('data-categoria');
+    document.getElementById('modalCriterioTexto').textContent = boton.getAttribute('data-criterio');
+  });
+  document.getElementById('formConfirmarTodas')?.addEventListener('submit', function (evento) {
+    if (!window.confirm('Se marcarán como revisadas todas las cuentas pendientes con sus categorías actuales. ¿Continuar?')) {
+      evento.preventDefault();
+    }
+  });
+</script>
+{% endblock %}

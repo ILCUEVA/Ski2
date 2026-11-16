@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Balancea{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-icons/bootstrap-icons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <div class="container-fluid bc-auth-screen">
+    <div class="row g-0" style="min-height:100vh;">
+      <div class="col-lg-5 bc-auth-aside">
+        <div>
+          <a href="{{ url_for('index') }}" class="bc-logo">
+            <span class="bc-logo-mark"><i class="bi bi-bar-chart-fill"></i></span>
+            balancea
+          </a>
+          <p class="bc-auth-eyebrow mt-4 mb-2" style="color:rgba(255,255,255,0.85);">Claridad financiera · NIIF 18</p>
+          <h1 class="fw-bold" style="font-size:2.1rem;">{% block aside_title %}{% endblock %}</h1>
+          <p style="color:rgba(255,255,255,0.85);">{% block aside_subtitle %}{% endblock %}</p>
+        </div>
+
+        <div class="bc-auth-steps my-4">
+          <div class="fw-semibold mb-3">Así se ordena tu resultado</div>
+          <div class="d-flex justify-content-between small mb-1">
+            <span><span class="me-1">01</span>Operación</span>
+          </div>
+          <div class="bc-step-bar mb-3"><span style="width:70%;"></span></div>
+          <div class="d-flex justify-content-between small mb-1">
+            <span><span class="me-1">02</span>Inversión</span>
+          </div>
+          <div class="bc-step-bar mb-3"><span style="width:30%;"></span></div>
+          <div class="d-flex justify-content-between small mb-1">
+            <span><span class="me-1">03</span>Financiación</span>
+          </div>
+          <div class="bc-step-bar"><span style="width:20%;"></span></div>
+        </div>
+
+        <div>
+          <p class="mb-1"><i class="bi bi-shield-check me-2"></i>Tu información, en un solo lugar.</p>
+          <p class="small mb-0" style="color:rgba(255,255,255,0.65);">NIIF 18 y NIIF para pymes son marcos distintos. Confirma con tu contador cuál aplica a tu empresa.</p>
+        </div>
+      </div>
+
+      <div class="col-lg-7 bc-auth-main">
+        <div class="bc-auth-card">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                  {{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+          {% block content %}{% endblock %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+</body>
+</html>
