@@ -14,11 +14,6 @@
   </div>
   <p class="text-muted-soft small mb-3">Debes usar todos los informes disponibles antes de comprar otro pack.</p>
   {% endif %}
-  {% if hay_cuentas_revisadas %}
-  <div class="mb-3">
-    <a href="{{ url_for('estado_resultados') }}" class="btn btn-bc-outline border"><i class="bi bi-arrow-left me-1"></i>Volver al paso 3 · Estado de Rendimiento Financiero</a>
-  </div>
-  {% endif %}
 
   <div class="row g-3">
     {% for nombre, pack in packs.items() %}

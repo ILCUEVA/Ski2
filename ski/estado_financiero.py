@@ -15,7 +15,11 @@ clasificadas (CuentaContable.categoria_niif):
   income taxes".
 - No se mezclan partidas de distinta naturaleza: cada cuenta se presenta en
   su propia línea dentro de su categoría (sin agregación/desagregación).
+- "Ganancia bruta" es un subtotal adicional (no obligatorio) dentro de
+  Operación: ingresos de actividades ordinarias menos costo de ventas. Solo
+  se presenta si se identifican cuentas de ambos tipos (cuentas_ventas.py).
 """
+from cuentas_ventas import es_costo_ventas, es_venta
 from models import CATEGORIAS_NIIF
 
 OPERACION, INVERSION, FINANCIACION, IMPUESTO, DISCONTINUADAS = CATEGORIAS_NIIF
@@ -34,8 +38,27 @@ def construir_estado(cuentas):
 
     # 1) Operación — categoría obligatoria
     filas.append({"tipo": "grupo", "texto": "01 Operación"})
-    for c in por_categoria[OPERACION]:
+    cuentas_operacion = por_categoria[OPERACION]
+    ventas = [c for c in cuentas_operacion if es_venta(c.nombre)]
+    costos_ventas = [c for c in cuentas_operacion if c not in ventas and es_costo_ventas(c.nombre)]
+    ganancia_bruta = None
+    if ventas and costos_ventas:
+        # Ventas y costo de ventas van primero para presentar la Ganancia bruta
+        # antes de los demás gastos de operación.
+        ganancia_bruta = sum(c.importe for c in ventas + costos_ventas)
+        resto = [c for c in cuentas_operacion if c not in ventas and c not in costos_ventas]
+        cuentas_operacion = ventas + costos_ventas
+    else:
+        resto = []
+
+    for c in cuentas_operacion:
         filas.append({"tipo": "detalle", "concepto": c.nombre, "valor": c.importe, "cuenta_id": c.id})
+    if ganancia_bruta is not None:
+        filas.append({
+            "tipo": "subtotal", "concepto": "Ganancia bruta", "valor": ganancia_bruta, "adicional": True,
+        })
+        for c in resto:
+            filas.append({"tipo": "detalle", "concepto": c.nombre, "valor": c.importe, "cuenta_id": c.id})
     acumulado += sum(c.importe for c in por_categoria[OPERACION])
     resultado_operativo = acumulado
     filas.append({
@@ -92,6 +115,7 @@ def construir_estado(cuentas):
     margen = (acumulado / ingresos_operacion * 100) if ingresos_operacion else None
 
     resumen = {
+        "ganancia_bruta": ganancia_bruta,
         "resultado_operativo": resultado_operativo,
         "resultado_antes_financiacion_impuestos": resultado_antes_financiacion_impuestos,
         "resultado_antes_impuestos": resultado_antes_impuestos,

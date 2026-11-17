@@ -305,8 +305,7 @@ def register_routes(app):
                     db.session.commit()
                     flash(
                         f"Se clasificaron {len(cuentas_resultado)} cuentas automáticamente según NIIF 18. "
-                        "Revisa y confirma cada una antes de generar el informe. También puedes revisar tus "
-                        "sugerencias de MPM (EBITDA, EBIT y más) en la sección MPM.",
+                        "Revisa y confirma cada una antes de generar el informe.",
                         "success",
                     )
                     return redirect(url_for("clasificacion"))

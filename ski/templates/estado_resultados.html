@@ -61,7 +61,7 @@
                   {{ fila.concepto }}
                   {% if fila.tipo == 'detalle' %}<span class="text-muted-soft small ms-2"><i class="bi bi-journal-text"></i> Ver movimientos</span>{% endif %}
                   {% if fila.tipo in ('subtotal', 'resultado') %}<i class="bi bi-check2-circle text-success ms-1"></i>{% endif %}
-                  {% if fila.obligatorio %}<span class="bc-badge-soft ms-2" style="font-size:0.65rem;">Subtotal NIIF 18</span>{% endif %}
+                  {% if fila.obligatorio %}<span class="bc-badge-soft ms-2" style="font-size:0.65rem;">Subtotal NIIF 18</span>{% elif fila.adicional %}<span class="bc-badge-soft ms-2" style="font-size:0.65rem;">Subtotal adicional</span>{% endif %}
                 </td>
                 <td class="text-end">{{ '(' + (fila.valor|abs|monto) + ')' if fila.valor < 0 else fila.valor|monto }}</td>
               </tr>
@@ -110,7 +110,8 @@
   <p class="text-muted-soft small mt-4 mb-0">
     Versión simplificada de NIIF 18: las 3 categorías obligatorias (operación, inversión y financiación) siempre se presentan; impuesto a las ganancias
     y operaciones discontinuadas solo se agregan si hay cuentas clasificadas en ellas. Los subtotales "Resultado operativo" y "Resultado antes de financiación
-    e impuestos a las ganancias" son obligatorios. Si la empresa presenta sus gastos por función, NIIF 18 exige revelar en notas su desglose por naturaleza
+    e impuestos a las ganancias" son obligatorios. La "Ganancia bruta" (ingresos de actividades ordinarias menos costo de ventas) es un subtotal adicional que se
+    muestra cuando se identifican cuentas de ventas y de costo de ventas. Si la empresa presenta sus gastos por función, NIIF 18 exige revelar en notas su desglose por naturaleza
     (depreciación, amortización, deterioros, etc.); esa nota detallada aún no está implementada en esta versión.
   </p>
   {% else %}

@@ -98,8 +98,7 @@
       </div>
       <p class="text-muted-soft small mb-3">Formatos XLSX · Máximo 20 MB · un periodo por archivo. Si no subes el libro mayor, podrás clasificar tus cuentas igual, pero no se mostrará el detalle de movimientos.</p>
 
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <span class="text-muted-soft small">Actividad principal: {{ (empresa.rubro or 'comercial') | lower }} · Empresa no financiera</span>
+      <div class="d-flex align-items-center justify-content-end flex-wrap gap-2">
         <div class="d-flex gap-2">
           <a href="{{ url_for('dashboard') }}" class="btn btn-bc-outline border">Cancelar</a>
           <button type="submit" class="btn btn-bc-primary d-flex align-items-center gap-2">

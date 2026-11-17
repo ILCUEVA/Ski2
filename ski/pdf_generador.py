@@ -345,45 +345,7 @@ def generar_pdf_estado(empresa, balance, filas_estado, periodo_anterior=None, cu
         valor = fila.get("valor_anterior")
         return _formato_monto(valor) if valor is not None else "—"
 
-    ventas_afectas = []
-    costos_ventas_afectas = []
-    categoria_actual = None
-    for fila in filas_estado:
-        if fila["tipo"] == "grupo":
-            categoria_actual = fila["texto"]
-            continue
-        if categoria_actual != "01 Operación" or fila["tipo"] != "detalle":
-            continue
-        nombre = _normalizar(fila["concepto"])
-        if "venta" in nombre and "afecta" in nombre:
-            if "costo" in nombre:
-                costos_ventas_afectas.append(fila)
-            else:
-                ventas_afectas.append(fila)
-
-    cuentas_ganancia_bruta = ventas_afectas + costos_ventas_afectas
-    ids_cuentas_ganancia_bruta = {id(fila) for fila in cuentas_ganancia_bruta}
-    filas_pdf = []
-    for fila in filas_estado:
-        filas_pdf.append(fila)
-        if fila["tipo"] == "grupo" and fila["texto"] == "01 Operación" and cuentas_ganancia_bruta:
-            filas_pdf.extend(cuentas_ganancia_bruta)
-            anteriores = [fila.get("valor_anterior") for fila in cuentas_ganancia_bruta]
-            fila_ganancia_bruta = {
-                "tipo": "subtotal",
-                "concepto": "Ganancia bruta",
-                "valor": sum(fila["valor"] for fila in cuentas_ganancia_bruta),
-            }
-            if comparar:
-                fila_ganancia_bruta["valor_anterior"] = (
-                    sum(valor for valor in anteriores if valor is not None)
-                    if any(valor is not None for valor in anteriores)
-                    else None
-                )
-            filas_pdf.append(fila_ganancia_bruta)
-        elif fila["tipo"] == "detalle" and id(fila) in ids_cuentas_ganancia_bruta:
-            filas_pdf.pop()
-
+    filas_pdf = list(filas_estado)
     rotulos_estructurales = {
         "Resultado operativo": "Ganancias (pérdidas) de actividades operacionales",
         "Resultado antes de financiación e impuestos a las ganancias": (

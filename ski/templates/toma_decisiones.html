@@ -40,6 +40,7 @@
       <div class="bc-card p-3">
         <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-steps me-1 text-muted-soft"></i>Variaciones</h6>
         {% if comparativos %}
+        {% macro formato_valor(valor) %}{% if valor is none %}—{% elif valor < 0 %}({{ valor|abs|monto }}){% else %}{{ valor|monto }}{% endif %}{% endmacro %}
         {% macro evaluar_variacion(valor, costo=false) %}
           {% if valor is none %}—
           {% elif valor == 0 %}<span class="text-muted-soft">Sin variación</span>
@@ -90,41 +91,41 @@
             </thead>
             <tbody>
               <tr>
-                <td>Margen operativo</td>
-                <td class="text-end">{{ '%.1f'|format(comparativos.margen_operativo_actual) ~ '%' if comparativos.margen_operativo_actual is not none else '—' }}</td>
-                <td class="text-end">{{ '%.1f'|format(comparativos.margen_operativo_anterior) ~ '%' if comparativos.margen_operativo_anterior is not none else '—' }}</td>
-                <td class="text-end">{{ '%.1f'|format(comparativos.variacion_margen_operativo_pp) ~ ' pp' if comparativos.variacion_margen_operativo_pp is not none else '—' }}</td>
-                <td>{{ evaluar_variacion(comparativos.variacion_margen_operativo_pp) }}</td>
-              </tr>
-              <tr>
-                <td>Margen bruto</td>
-                <td class="text-end">{{ '%.1f'|format(comparativos.margen_bruto_actual) ~ '%' if comparativos.margen_bruto_actual is not none else '—' }}</td>
-                <td class="text-end">{{ '%.1f'|format(comparativos.margen_bruto_anterior) ~ '%' if comparativos.margen_bruto_anterior is not none else '—' }}</td>
-                <td class="text-end">{{ '%.1f'|format(comparativos.variacion_margen_bruto_pp) ~ ' pp' if comparativos.variacion_margen_bruto_pp is not none else '—' }}</td>
-                <td>{{ evaluar_variacion(comparativos.variacion_margen_bruto_pp) }}</td>
-              </tr>
-              <tr>
                 <td>Ventas</td>
-                <td class="text-end">{{ comparativos.ingresos_actuales|monto if comparativos.ingresos_actuales is not none else '—' }}</td>
-                <td class="text-end">{{ comparativos.ingresos_anteriores|monto if comparativos.ingresos_anteriores is not none else '—' }}</td>
+                <td class="text-end">{{ formato_valor(comparativos.ingresos_actuales) }}</td>
+                <td class="text-end">{{ formato_valor(comparativos.ingresos_anteriores) }}</td>
                 <td class="text-end">{{ '%.1f'|format(comparativos.variacion_ventas_pct) ~ '%' if comparativos.variacion_ventas_pct is not none else '—' }}</td>
                 <td>{{ evaluar_variacion(comparativos.variacion_ventas_pct) }}</td>
               </tr>
               <tr>
                 <td>Costo de Ventas</td>
-                <td class="text-end">{{ comparativos.costo_ventas_actual|abs|monto if comparativos.costo_ventas_actual is not none else '—' }}</td>
-                <td class="text-end">{{ comparativos.costo_ventas_anterior|abs|monto if comparativos.costo_ventas_anterior is not none else '—' }}</td>
+                <td class="text-end">{{ formato_valor(comparativos.costo_ventas_actual|abs if comparativos.costo_ventas_actual is not none else none) }}</td>
+                <td class="text-end">{{ formato_valor(comparativos.costo_ventas_anterior|abs if comparativos.costo_ventas_anterior is not none else none) }}</td>
                 <td class="text-end">{{ '%.1f'|format(comparativos.variacion_costo_ventas_pct) ~ '%' if comparativos.variacion_costo_ventas_pct is not none else '—' }}</td>
                 <td>{{ evaluar_variacion(comparativos.variacion_costo_ventas_pct, costo=true) }}</td>
+              </tr>
+              <tr>
+                <td>Ganancia bruta</td>
+                <td class="text-end">{{ formato_valor(comparativos.ganancia_bruta_actual) }}</td>
+                <td class="text-end">{{ formato_valor(comparativos.ganancia_bruta_anterior) }}</td>
+                <td class="text-end">{{ '%.1f'|format(comparativos.variacion_ganancia_bruta_pct) ~ '%' if comparativos.variacion_ganancia_bruta_pct is not none else '—' }}</td>
+                <td>{{ evaluar_variacion(comparativos.variacion_ganancia_bruta_pct) }}</td>
+              </tr>
+              <tr>
+                <td>Resultado operativo</td>
+                <td class="text-end">{{ formato_valor(comparativos.resultado_operativo_actual) }}</td>
+                <td class="text-end">{{ formato_valor(comparativos.resultado_operativo_anterior) }}</td>
+                <td class="text-end">{{ '%.1f'|format(comparativos.variacion_resultado_operativo_pct) ~ '%' if comparativos.variacion_resultado_operativo_pct is not none else '—' }}</td>
+                <td>{{ evaluar_variacion(comparativos.variacion_resultado_operativo_pct) }}</td>
               </tr>
             </tbody>
           </table>
         </div>
         {% if not comparativos.periodo_anterior %}
-        <p class="text-muted-soft small mt-3 mb-0">Sube un balance del año anterior para comparar los márgenes.</p>
+        <p class="text-muted-soft small mt-3 mb-0">Sube un balance del año anterior para comparar los resultados.</p>
         {% endif %}
-        {% if comparativos.margen_bruto_actual is none or comparativos.margen_operativo_actual is none %}
-        <p class="text-muted-soft small mt-3 mb-0">Algún margen no está disponible porque no se identificaron sus cuentas de ventas, costo de ventas o resultado operativo en la información cargada.</p>
+        {% if comparativos.ingresos_actuales is none or comparativos.ganancia_bruta_actual is none %}
+        <p class="text-muted-soft small mt-3 mb-0">Alguna cifra no está disponible porque no se identificaron sus cuentas de ventas o costo de ventas en la información cargada.</p>
         {% endif %}
         {% endif %}
       </div>

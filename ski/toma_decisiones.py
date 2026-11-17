@@ -4,8 +4,7 @@ alimentan el Estado de Rendimiento Financiero (paso 1: Subir Información
 Contable). No se sube nada nuevo aquí: se reutiliza el historial de
 balances ya cargado.
 """
-import unicodedata
-
+from cuentas_ventas import es_costo_ventas as _es_costo_ventas, es_venta as _es_venta
 from estado_financiero import construir_estado
 
 UMBRAL_ALERTA_PORCENTAJE = 20  # variación mínima (%) para generar una alerta
@@ -43,53 +42,6 @@ def _gastos_operativos_del_balance(cuentas):
         and not _es_costo_ventas(cuenta.nombre)
     ]
     return sum(abs(cuenta.importe) for cuenta in cuentas_gastos) if cuentas_gastos else None
-
-
-def _normalizar(texto):
-    texto = (texto or "").lower()
-    return "".join(
-        caracter
-        for caracter in unicodedata.normalize("NFD", texto)
-        if unicodedata.category(caracter) != "Mn"
-    )
-
-
-def _es_venta(nombre):
-    nombre = _normalizar(nombre)
-    if any(termino in nombre for termino in ("perdida en venta", "ganancia en venta", "venta de maquinaria", "venta de activo")):
-        return False
-    return any(
-        termino in nombre
-        for termino in (
-            "ventas",
-            "venta afecta",
-            "ingresos por obras",
-            "ingreso ordinario",
-            "ingresos ordinarios",
-            "ingreso de actividades",
-            "ingresos de actividades",
-            "ingresos por servicios",
-            "servicios prestados",
-            "prestacion de servicios",
-        )
-    ) and "costo" not in nombre
-
-
-def _es_costo_ventas(nombre):
-    nombre = _normalizar(nombre)
-    return any(
-        termino in nombre
-        for termino in (
-            "costo de venta",
-            "costo venta",
-            "costo de arriendo de maquinaria",
-            "costo de combustibles y fletes",
-            "costo de mano de obra directa",
-            "costo de materiales",
-            "costo de subcontratos",
-            "costo por garantia de obras",
-        )
-    )
 
 
 def _margen(numerador, ingresos):
@@ -270,6 +222,15 @@ def calcular_comparativos(empresa):
         ),
         "ganancia_bruta_actual": actual["ganancia_bruta"],
         "ganancia_bruta_anterior": anterior["ganancia_bruta"] if anterior else None,
+        "variacion_ganancia_bruta_pct": _variacion_porcentual(
+            actual["ganancia_bruta"], anterior["ganancia_bruta"] if anterior else None
+        ),
+        "resultado_operativo_actual": actual["resumen"]["resultado_operativo"],
+        "resultado_operativo_anterior": anterior["resumen"]["resultado_operativo"] if anterior else None,
+        "variacion_resultado_operativo_pct": _variacion_porcentual(
+            actual["resumen"]["resultado_operativo"],
+            anterior["resumen"]["resultado_operativo"] if anterior else None,
+        ),
         "margen_bruto_actual": actual["margen_bruto"],
         "margen_bruto_anterior": anterior["margen_bruto"] if anterior else None,
         "variacion_margen_bruto_pp": _variacion_puntos_porcentuales(
