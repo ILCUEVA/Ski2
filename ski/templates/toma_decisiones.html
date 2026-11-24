@@ -134,7 +134,7 @@
     <section class="tab-pane fade" id="alertas-panel" role="tabpanel" aria-labelledby="alertas-tab" tabindex="0">
       <div class="bc-card p-3">
         <h6 class="fw-bold mb-3"><i class="bi bi-bell me-1 text-muted-soft"></i>Alertas</h6>
-        <p class="text-muted-soft small mb-3">Los umbrales comparativos son orientativos, no promedios del sector: caída de ventas desde 20% y deterioro de razones de costo o gastos desde 5 puntos porcentuales.</p>
+        <p class="text-muted-soft small mb-3">Comparamos este periodo con el anterior y te avisamos cuando las ventas bajan un {{ umbrales.caida_ventas_pct }}% o más, o cuando los costos y gastos pesan {{ umbrales.puntos_por_cada_100 }} puntos más por cada 100 que vendes. Estos límites se ajustan según tu rubro ({{ empresa.rubro }}) y son referencias orientativas, no promedios del sector.</p>
         {% if alertas %}
         <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
           {% for a in alertas %}
@@ -143,6 +143,19 @@
             <div class="flex-grow-1">
               <div class="fw-semibold">{{ a.titulo }}</div>
               <p class="text-muted-soft small mb-1">{{ a.detalle }}</p>
+              {% if a.en_simple %}
+              <p class="small mb-1"><strong>En simple:</strong> {{ a.en_simple }}</p>
+              {% endif %}
+              {% for g in a.grupos or [] %}
+              <div class="small mb-1">
+                <div class="fw-semibold">{{ g.titulo }}</div>
+                <ul class="mb-1 ps-3">
+                  {% for c in g.cuentas %}
+                  <li><strong>{{ c.nombre }}:</strong> {{ c.texto }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endfor %}
               <p class="small mb-0"><strong>Sugerencia:</strong> {{ a.sugerencia }}</p>
             </div>
           </li>

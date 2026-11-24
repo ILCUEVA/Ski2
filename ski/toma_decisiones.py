@@ -7,8 +7,28 @@ balances ya cargado.
 from cuentas_ventas import es_costo_ventas as _es_costo_ventas, es_venta as _es_venta
 from estado_financiero import construir_estado
 
-UMBRAL_ALERTA_PORCENTAJE = 20  # variación mínima (%) para generar una alerta
-UMBRAL_ALERTA_PUNTOS_PORCENTUALES = 5
+UMBRALES_POR_DEFECTO = {
+    "caida_ventas_pct": 20,  # baja mínima de ventas (%) para alertar
+    "puntos_por_cada_100": 5,  # aumento mínimo del peso de costos/gastos, o caída del margen
+}
+
+# Criterio orientativo propio (no proviene de promedios publicados del sector): rubros con ventas
+# más variables toleran una caída mayor antes de alertar; rubros con márgenes ajustados alertan
+# con variaciones más pequeñas. Ajustar aquí los valores de cada rubro.
+UMBRALES_POR_RUBRO = {
+    "Constructoras": {"caida_ventas_pct": 25, "puntos_por_cada_100": 6},
+    "Comercial": {"caida_ventas_pct": 15, "puntos_por_cada_100": 3},
+    "Farmacia": {"caida_ventas_pct": 10, "puntos_por_cada_100": 2},
+    "Servicios profesionales": {"caida_ventas_pct": 20, "puntos_por_cada_100": 5},
+    "Restaurantes y cafés": {"caida_ventas_pct": 20, "puntos_por_cada_100": 4},
+    "Manufactura": {"caida_ventas_pct": 20, "puntos_por_cada_100": 4},
+    "Tecnología": {"caida_ventas_pct": 25, "puntos_por_cada_100": 6},
+    "Transporte y logística": {"caida_ventas_pct": 15, "puntos_por_cada_100": 3},
+}
+
+
+def umbrales_del_rubro(rubro):
+    return {**UMBRALES_POR_DEFECTO, **UMBRALES_POR_RUBRO.get(rubro, {})}
 
 
 def _ingresos_del_balance(cuentas):
@@ -89,6 +109,7 @@ def _historial_por_periodo(empresa):
             {
                 "periodo": periodo,
                 "balance": balance,
+                "cuentas": cuentas,
                 "resumen": resumen,
                 "ingresos": ingresos,
                 "costo_ventas": costo_ventas,
@@ -244,54 +265,214 @@ def calcular_comparativos(empresa):
     }
 
 
+def _es_gasto_operativo(cuenta):
+    return (
+        cuenta.categoria_niif == "Operación"
+        and cuenta.importe < 0
+        and not _es_venta(cuenta.nombre)
+        and not _es_costo_ventas(cuenta.nombre)
+    )
+
+
+def _es_cuenta_venta(cuenta):
+    return cuenta.categoria_niif == "Operación" and _es_venta(cuenta.nombre)
+
+
+def _es_cuenta_costo_ventas(cuenta):
+    return cuenta.categoria_niif == "Operación" and _es_costo_ventas(cuenta.nombre)
+
+
+def _monto_simple(valor):
+    valor = abs(valor)
+    if valor >= 1_000_000:
+        texto = f"{valor / 1_000_000:,.1f}".replace(",", "_").replace(".", ",").replace("_", ".")
+        if texto.endswith(",0"):
+            texto = texto[:-2]
+        return f"{texto} millones"
+    return f"{valor:,.0f}".replace(",", ".")
+
+
+def _montos_por_cuenta(item, seleccion, signo):
+    """Monto por nombre de cuenta; signo=-1 para mostrar costos y gastos como positivos."""
+    montos = {}
+    for cuenta in item["cuentas"]:
+        if seleccion(cuenta):
+            montos[cuenta.nombre] = montos.get(cuenta.nombre, 0) + signo * cuenta.importe
+    return montos
+
+
+def _cuentas_que_mas_cambiaron(actual, anterior, seleccion, signo, sentido, limite=3):
+    """Cuentas con mayor cambio entre periodos, con una frase fácil de leer.
+    sentido: 'baja', 'sube' o 'ambos'."""
+    previos = _montos_por_cuenta(anterior, seleccion, signo)
+    actuales = _montos_por_cuenta(actual, seleccion, signo)
+    filas = []
+    for nombre in set(previos) | set(actuales):
+        antes = previos.get(nombre, 0)
+        ahora = actuales.get(nombre, 0)
+        diferencia = ahora - antes
+        if diferencia == 0 or (sentido == "baja" and diferencia > 0) or (sentido == "sube" and diferencia < 0):
+            continue
+        filas.append((abs(diferencia), nombre, antes, ahora, diferencia))
+    filas.sort(reverse=True)
+    resultado = []
+    for _, nombre, antes, ahora, diferencia in filas[:limite]:
+        verbo = "Subió" if diferencia > 0 else "Bajó"
+        cambio = "más" if diferencia > 0 else "menos"
+        resultado.append(
+            {
+                "nombre": nombre,
+                "texto": (
+                    f"{verbo} de {_monto_simple(antes)} a {_monto_simple(ahora)} "
+                    f"({_monto_simple(diferencia)} {cambio})."
+                ),
+            }
+        )
+    return resultado
+
+
+def _cuentas_de_mayor_monto(item, seleccion, signo, limite=3):
+    montos = _montos_por_cuenta(item, seleccion, signo)
+    ordenadas = sorted(montos.items(), key=lambda par: par[1], reverse=True)[:limite]
+    return [
+        {"nombre": nombre, "texto": f"Suma {_monto_simple(monto)} en el periodo."}
+        for nombre, monto in ordenadas
+        if monto > 0
+    ]
+
+
+def _grupo(titulo, cuentas):
+    return {"titulo": titulo, "cuentas": cuentas} if cuentas else None
+
+
+def _grupos(*grupos):
+    return [grupo for grupo in grupos if grupo]
+
+
+def _periodo_texto(item):
+    return str(item["periodo"])
+
+
+def _explicar_costos_vs_ventas(actual, anterior, costo_actual, costo_anterior):
+    variacion_ventas = _variacion_porcentual(actual["ingresos"], anterior["ingresos"])
+    variacion_costos = _variacion_porcentual(
+        abs(actual["costo_ventas"]), abs(anterior["costo_ventas"])
+    )
+    if variacion_ventas is None or variacion_costos is None:
+        return (
+            f"Hoy {costo_actual:.0f} de cada 100 que vendes se destinan a costos directos; "
+            f"antes eran {costo_anterior:.0f}. Queda menos dinero para pagar los demás gastos."
+        )
+
+    def describir(variacion):
+        return f"{'subieron' if variacion > 0 else 'bajaron'} {abs(variacion):.1f}%"
+
+    return (
+        f"Tus ventas {describir(variacion_ventas)}, pero tus costos directos {describir(variacion_costos)}. "
+        "Como los costos no se redujeron en la misma medida que las ventas, "
+        f"de cada 100 que vendes ahora quedan {100 - costo_actual:.0f} (antes {100 - costo_anterior:.0f}) "
+        "para pagar los demás gastos y generar ganancia."
+    )
+
+
 def calcular_alertas(empresa):
+    """Cada alerta incluye una explicación simple ("en_simple") y, cuando es posible,
+    las cuentas que más influyen ("grupos") para usuarios sin formación contable."""
     historial = _historial_por_periodo(empresa)
     alertas = []
     if not historial:
         return alertas
 
     actual = historial[-1]
+    anterior = historial[-2] if len(historial) > 1 else None
+    umbrales = umbrales_del_rubro(empresa.rubro)
     resultado_operativo = actual["resumen"]["resultado_operativo"]
     if actual["ganancia_bruta"] is not None and actual["ganancia_bruta"] < 0:
         alertas.append(
             {
                 "severidad": "danger",
-                "titulo": "El costo de ventas supera las ventas",
-                "detalle": "La empresa presenta una pérdida bruta en el periodo actual.",
+                "titulo": "Lo que cuesta realizar tus ventas es mayor a lo que vendes",
+                "detalle": (
+                    f"En {_periodo_texto(actual)} vendiste {_monto_simple(actual['ingresos'])} y solo "
+                    f"los costos directos (materiales, mano de obra, subcontratos) sumaron "
+                    f"{_monto_simple(actual['costo_ventas'])}."
+                ),
+                "en_simple": "Cada venta te está dejando pérdida, incluso antes de pagar oficina, sueldos de administración u otros gastos.",
+                "grupos": _grupos(
+                    _grupo(
+                        "Costos más altos",
+                        _cuentas_de_mayor_monto(actual, _es_cuenta_costo_ventas, -1),
+                    )
+                ),
                 "sugerencia": (
-                    "Revisar precios, descuentos, compras y costo de productos en el libro mayor; "
-                    "confirmar también la clasificación de ventas y costos."
+                    "Revisa si los precios de venta cubren lo que te cuesta producir o ejecutar el trabajo, "
+                    "y si hay compras o descuentos fuera de lo normal."
                 ),
             }
         )
 
     if resultado_operativo < 0:
+        grupos = (
+            _grupos(
+                _grupo(
+                    "Ventas que más bajaron",
+                    _cuentas_que_mas_cambiaron(actual, anterior, _es_cuenta_venta, 1, "baja", 2),
+                ),
+                _grupo(
+                    "Gastos que más subieron",
+                    _cuentas_que_mas_cambiaron(actual, anterior, _es_gasto_operativo, -1, "sube", 2),
+                ),
+            )
+            if anterior
+            else _grupos(
+                _grupo(
+                    "Gastos más altos",
+                    _cuentas_de_mayor_monto(actual, _es_gasto_operativo, -1),
+                )
+            )
+        )
         alertas.append(
             {
                 "severidad": "danger",
-                "titulo": "Resultado operativo negativo",
-                "detalle": "Los ingresos operativos no alcanzan para cubrir los costos y gastos operativos registrados.",
+                "titulo": "Estás perdiendo dinero con tu actividad principal",
+                "detalle": (
+                    f"En {_periodo_texto(actual)}, lo que ingresó por ventas no alcanzó para pagar todos "
+                    f"los costos y gastos del negocio. Faltaron {_monto_simple(resultado_operativo)}."
+                ),
+                "en_simple": "Los gastos del periodo superaron a las ventas.",
+                "grupos": grupos,
                 "sugerencia": (
-                    "Revisar las cuentas de gasto con mayor importe, validar sus movimientos y analizar "
-                    "opciones de precio, ventas y costos antes de aplicar recortes."
+                    "Mira primero las cuentas de arriba. Antes de recortar, revisa si puedes vender más "
+                    "o ajustar precios."
                 ),
             }
         )
 
-    if len(historial) < 2:
+    if anterior is None:
         return alertas
 
-    anterior = historial[-2]
     variacion_ventas = _variacion_porcentual(actual["ingresos"], anterior["ingresos"])
-    if variacion_ventas is not None and variacion_ventas <= -UMBRAL_ALERTA_PORCENTAJE:
+    if variacion_ventas is not None and variacion_ventas <= -umbrales["caida_ventas_pct"]:
+        ventas_que_bajaron = _cuentas_que_mas_cambiaron(
+            actual, anterior, _es_cuenta_venta, 1, "baja", 3
+        )
+        principal = (
+            f" La cuenta que más influye es «{ventas_que_bajaron[0]['nombre']}»." if ventas_que_bajaron else ""
+        )
         alertas.append(
             {
                 "severidad": "warning",
-                "titulo": "Disminución significativa de ventas",
-                "detalle": f"Las ventas bajaron {abs(variacion_ventas):.1f}% respecto del periodo anterior.",
+                "titulo": "Vendiste menos que en el periodo anterior",
+                "detalle": (
+                    f"Tus ventas bajaron {abs(variacion_ventas):.1f}%: pasaron de "
+                    f"{_monto_simple(anterior['ingresos'])} en {_periodo_texto(anterior)} a "
+                    f"{_monto_simple(actual['ingresos'])} en {_periodo_texto(actual)}."
+                ),
+                "en_simple": f"Los ingresos por ventas disminuyeron de forma importante.{principal}",
+                "grupos": _grupos(_grupo("Ventas que más bajaron", ventas_que_bajaron)),
                 "sugerencia": (
-                    "Comparar las cuentas de ventas y sus movimientos por cliente, producto y fecha; "
-                    "revisar cambios de precio, volumen y estacionalidad."
+                    "Averigua si perdiste clientes, si terminaron proyectos o si cambiaron los precios "
+                    "o la temporada."
                 ),
             }
         )
@@ -301,19 +482,29 @@ def calcular_alertas(empresa):
     if (
         costo_actual is not None
         and costo_anterior is not None
-        and costo_actual - costo_anterior >= UMBRAL_ALERTA_PUNTOS_PORCENTUALES
+        and costo_actual - costo_anterior >= umbrales["puntos_por_cada_100"]
     ):
         alertas.append(
             {
                 "severidad": "warning",
-                "titulo": "El costo de ventas consume una mayor proporción de las ventas",
+                "titulo": "Producir o ejecutar lo que vendes te está costando más",
                 "detalle": (
-                    f"La proporción aumentó {costo_actual - costo_anterior:.1f} puntos porcentuales "
-                    "respecto del periodo anterior."
+                    f"En {_periodo_texto(anterior)}, de cada 100 que vendías, {costo_anterior:.0f} se iban en "
+                    f"costos directos (materiales, mano de obra, subcontratos). En {_periodo_texto(actual)} "
+                    f"son {costo_actual:.0f}."
+                ),
+                "en_simple": _explicar_costos_vs_ventas(actual, anterior, costo_actual, costo_anterior),
+                "grupos": _grupos(
+                    _grupo(
+                        "Costos que más cambiaron",
+                        _cuentas_que_mas_cambiaron(
+                            actual, anterior, _es_cuenta_costo_ventas, -1, "ambos", 3
+                        ),
+                    )
                 ),
                 "sugerencia": (
-                    "Revisar en el libro mayor compras, costos por producto, descuentos y movimientos "
-                    "inusuales; contrastar precios de proveedores y precios de venta."
+                    "Compara lo que pagas a proveedores y subcontratistas con lo que cobras, "
+                    "y revisa descuentos o gastos inusuales."
                 ),
             }
         )
@@ -323,19 +514,27 @@ def calcular_alertas(empresa):
     if (
         gastos_actuales is not None
         and gastos_anteriores is not None
-        and gastos_actuales - gastos_anteriores >= UMBRAL_ALERTA_PUNTOS_PORCENTUALES
+        and gastos_actuales - gastos_anteriores >= umbrales["puntos_por_cada_100"]
     ):
         alertas.append(
             {
                 "severidad": "warning",
-                "titulo": "Los gastos operativos crecen frente a las ventas",
+                "titulo": "Los gastos de funcionamiento pesan más sobre tus ventas",
                 "detalle": (
-                    f"El peso de los gastos operativos aumentó "
-                    f"{gastos_actuales - gastos_anteriores:.1f} puntos porcentuales."
+                    f"En {_periodo_texto(anterior)}, de cada 100 vendidos, {gastos_anteriores:.0f} se usaban en "
+                    f"gastos como oficina, sueldos de administración o arriendos. En {_periodo_texto(actual)} "
+                    f"son {gastos_actuales:.0f}."
+                ),
+                "en_simple": "Los gastos para mantener el negocio funcionando subieron mientras tus ventas bajaron.",
+                "grupos": _grupos(
+                    _grupo(
+                        "Gastos que más subieron",
+                        _cuentas_que_mas_cambiaron(actual, anterior, _es_gasto_operativo, -1, "sube", 3),
+                    )
                 ),
                 "sugerencia": (
-                    "Ordenar las cuentas operativas por aumento e importe, revisar sus movimientos y "
-                    "distinguir gastos recurrentes de extraordinarios antes de ajustar presupuestos."
+                    "Separa los gastos que se repiten todos los años de los que fueron únicos, "
+                    "antes de decidir qué ajustar."
                 ),
             }
         )
@@ -343,16 +542,33 @@ def calcular_alertas(empresa):
     margen_actual = actual["margen_operativo"]
     margen_anterior = anterior["margen_operativo"]
     deterioro_margen = _variacion_puntos_porcentuales(margen_actual, margen_anterior)
-    if deterioro_margen is not None and deterioro_margen <= -UMBRAL_ALERTA_PUNTOS_PORCENTUALES:
+    if deterioro_margen is not None and deterioro_margen <= -umbrales["puntos_por_cada_100"]:
+        ahora = (
+            f"pierdes {abs(margen_actual):.1f}" if margen_actual < 0 else f"ganas {margen_actual:.1f}"
+        )
+        antes = (
+            f"perdías {abs(margen_anterior):.1f}" if margen_anterior < 0 else f"ganabas {margen_anterior:.1f}"
+        )
         alertas.append(
             {
                 "severidad": "warning",
-                "titulo": "Deterioro del margen operativo",
-                "detalle": f"El margen operativo disminuyó {abs(deterioro_margen):.1f} puntos porcentuales.",
-                "sugerencia": (
-                    "Revisar qué cuentas explican la variación y contrastar el crecimiento de ventas, "
-                    "costo de ventas y gastos operativos."
+                "titulo": "Cada venta te deja menos ganancia",
+                "detalle": (
+                    f"De cada 100 que vendes, en {_periodo_texto(anterior)} {antes} después de pagar todos "
+                    f"los costos y gastos; en {_periodo_texto(actual)} {ahora}."
                 ),
+                "en_simple": "Es el resultado de vender menos y, a la vez, gastar más en proporción a lo que vendes.",
+                "grupos": _grupos(
+                    _grupo(
+                        "Ventas que más bajaron",
+                        _cuentas_que_mas_cambiaron(actual, anterior, _es_cuenta_venta, 1, "baja", 2),
+                    ),
+                    _grupo(
+                        "Gastos que más subieron",
+                        _cuentas_que_mas_cambiaron(actual, anterior, _es_gasto_operativo, -1, "sube", 2),
+                    ),
+                ),
+                "sugerencia": "Revisa las cuentas indicadas arriba: son las que más explican el cambio.",
             }
         )
     return alertas

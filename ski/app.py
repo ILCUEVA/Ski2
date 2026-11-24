@@ -16,7 +16,7 @@ from estado_financiero import combinar_con_periodo_anterior, construir_estado
 from pdf_generador import generar_pdf_estado
 from progreso import calcular_progreso, limpiar_balances_expirados
 from mpm_sugeridas import calcular_mpm_sugeridas, mpm_sugeridas_por_rubro
-from toma_decisiones import calcular_alertas, calcular_comparativos, calcular_tendencias, preparar_grafico_margenes
+from toma_decisiones import calcular_alertas, calcular_comparativos, calcular_tendencias, preparar_grafico_margenes, umbrales_del_rubro
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -625,6 +625,7 @@ def register_routes(app):
             grafico_margenes=grafico_margenes,
             comparativos=comparativos,
             alertas=alertas,
+            umbrales=umbrales_del_rubro(empresa.rubro),
         )
 
     @app.route("/packs")
